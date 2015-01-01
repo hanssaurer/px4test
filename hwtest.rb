@@ -24,6 +24,11 @@ finished = false
 
 def sendTestResult (testResult, success)
 
+  #Environment specific! Please change to your own
+  sender = 'hans@saurer.name'
+  recipient1 = 'hans.saurer@t-online.de'
+  recipient2 = 'lm@qgroundcontrol.org'
+
   filename = "TestResult.txt"
   marker = "px4-postfix-smtpmail*******"
 
@@ -76,8 +81,8 @@ EOF
 
   #Params: "message-text, sender, recipient, recipient..."
   Net::SMTP.start('localhost') do |smtp|
-    smtp.send_message message, 'hans@saurer.name', 
-                               'hans.saurer@t-online.de'
+    smtp.send_message message, sender, recipient1, recipient2
+                               
   end
 
 end
@@ -105,7 +110,7 @@ sp.read_timeout = 5000             #wait a little longer
 begin
   input = sp.gets()
   if input != nil and !input.empty?
-    puts "<" + input
+    #puts "<" + input
     testResult = testResult + input
     if testResult.index("nsh>") != nil
       finished = true
