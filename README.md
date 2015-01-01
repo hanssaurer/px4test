@@ -12,6 +12,14 @@ sudo gem install serialport sinatra json octokit
 
 ## Configuration
 
+The configuration involves the local configuration and setting up a webhook in the repository.
+
+### Repository
+
+Create a new webhook with a URL looking like: http://<ip or host>:4567
+
+### Local
+
 To run the system, a config file called config.txt should be created in this directory. The minimum content is this:
 
 ```
@@ -20,6 +28,7 @@ To run the system, a config file called config.txt should be created in this dir
 # Configuration for PX4 test system
 
 export GITTOKEN=<GITHUBTOKEN>
+export PX4FORK=<FORK, use "PX4" as default>
 
 ```
 

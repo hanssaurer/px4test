@@ -5,5 +5,3 @@ source config.txt
 
 echo -e "Running build test"
 ruby build.rb
-echo -e "Running flash / run test"
-ruby runhwtest.rb

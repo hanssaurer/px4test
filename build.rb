@@ -4,11 +4,13 @@ require 'octokit'
 
 #You can write Visual-Basic in any language!
 
+set :bind, '0.0.0.0'
+set :environment, :production
 
 $srcdir = "./testsrc"            #From some kind of config - later
 
 $ACCESS_TOKEN = ENV['GITTOKEN']
-
+fork = ENV['PX4FORK']
     
 def do_clone (branch)
     puts "do_clone: " + branch
