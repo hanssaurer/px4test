@@ -77,8 +77,8 @@ post '/payload' do
         a = branch.split('/')
         branch = a[a.count-1]           #last part is the bare branchname
         puts "Going to clone branch: " + branch
-        #do_clone  branch
-        #do_build
+        do_clone  branch
+        do_build
         set_PR_Status('success')
     when 'push'
         branch = body['ref']
@@ -87,6 +87,19 @@ post '/payload' do
         puts "Going to clone branch: " + branch
         do_clone  branch
         do_build
+
+#Hot - call testrun in child process and detach
+pid = Process.fork
+if pid.nil? then
+  # In child
+  exec "ruby hwtest.rb"
+else
+  # In parent
+  Process.detach(pid)
+end
+
+
+
 
     else
         puts "unknown event"
