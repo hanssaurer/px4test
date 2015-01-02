@@ -20,10 +20,10 @@ def do_clone (branch)
     system 'mkdir', '-p', $srcdir
     Dir.chdir($srcdir) do
         #git clone <url> --branch <branch> --single-branch [<folder>]
-        result = `git clone https://github.com/hanssaurer/Firmware.git --branch #{branch} --single-branch `
+        result = `git clone --depth 500 https://github.com/hanssaurer/Firmware.git --branch #{branch} --single-branch `
         puts result
         Dir.chdir("./Firmware") do
-            result = `git clone https://github.com/PX4/NuttX`
+            result = `git submodule init && git submodule update`
             puts result
         end
     end
@@ -42,7 +42,7 @@ def do_build ()
         puts result
         result = `make archives`
         puts result
-        result = `make`
+        result = `make -j6`
         puts result
         result = `make upload px4fmu-v2_default`
         puts result
@@ -56,7 +56,7 @@ def set_PR_Status (prstatus)
     #puts pr['base']['repo']['full_name']
     #puts pr['head']['sha']
     client.create_status(pr['base']['repo']['full_name'], pr['head']['sha'], prstatus)
-    puts "fertig!"
+    puts "done!"
 end    
 
 

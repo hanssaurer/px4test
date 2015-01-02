@@ -35,8 +35,8 @@ To run the system, a config file called config.txt should be created in this dir
 
 # Configuration for PX4 test system
 
-export GITTOKEN=<GITHUBTOKEN>
-export PX4FORK=<FORK, use "PX4" as default>
+export GITTOKEN=[GITHUBTOKEN]
+export PX4FORK=[FORK, use "PX4" as default]
 
 ```
 
