@@ -42,7 +42,7 @@ def do_build ()
         puts result
         result = `make archives`
         puts result
-        result = `make -j6`
+        result = `make -j6 px4fmu-v2_default`
         puts result
         result = `make upload px4fmu-v2_default`
         puts result
