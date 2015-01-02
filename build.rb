@@ -6,6 +6,9 @@ require 'octokit'
 
 set :bind, '0.0.0.0'
 set :environment, :production
+# XXX webrick has issues in recent versions accepting non-localhost transfers
+set :server, :thin
+set :port, 4567
 
 $srcdir = "./testsrc"            #From some kind of config - later
 

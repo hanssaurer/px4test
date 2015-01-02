@@ -2,23 +2,31 @@
 
 *   Official Website: http://px4.io
 
-## Installation
+### Caveats
+
+The current version of sinatra + webrick seems to hate external hosts and will go into timeout even if configured for RX address 0.0.0.0 and production. The server script is therefore hardcoded to the thin server.
+
+### Installation
 
 Install the dependencies using gem:
 
 ```
-sudo gem install serialport sinatra json octokit
+sudo gem install serialport sinatra json octokit thin
 ```
 
-## Configuration
+### Configuration
 
 The configuration involves the local configuration and setting up a webhook in the repository.
 
-### Repository
+#### Repository
 
-Create a new webhook with a URL looking like: http://<ip or host>:4567
+Create a new webhook with a URL looking like the one below and replace [ip or host] with the appropriate hostname.
 
-### Local
+```
+http://[ip or host]:4567/payload
+```
+
+#### Local
 
 To run the system, a config file called config.txt should be created in this directory. The minimum content is this:
 
@@ -36,12 +44,10 @@ The generation of Github tokens is explained on the Github help page:
 https://help.github.com/articles/creating-an-access-token-for-command-line-use/
 
 
-##Initial 
-###Separate scripts for Clone+Build and running tests
+### Testing 
+
+XXX Describe how to run tests
 
 1. run build.rb
 2. run runhwtest.rb
 
-To run build set a WebHook to your server adress and port (4567)
-and create an access token for your repository
-and save it as ENV("GITTOKEN")
