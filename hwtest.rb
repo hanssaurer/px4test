@@ -26,7 +26,10 @@ def sendTestResult (testResult, success)
 
   #Environment specific! Please change to your own
   sender = 'hans@saurer.name'
+
+  #XXX Recipient needs to be taken from post
   recipient1 = 'hans.saurer@t-online.de'
+  #???Copy to some control authority
   recipient2 = 'lm@qgroundcontrol.org'
 
   filename = "TestResult.txt"
@@ -81,18 +84,29 @@ EOF
 
   #Params: "message-text, sender, recipient, recipient..."
   Net::SMTP.start('localhost') do |smtp|
-    smtp.send_message message, sender, recipient1, recipient2
+    smtp.send_message message, sender, recipient1
                                
   end
 
 end
 
- 
-sp = SerialPort.new(port_str, baud_rate, data_bits, stop_bits, parity)
+#Open serial port - safe
+begin
+  sp = SerialPort.new(port_str, baud_rate, data_bits, stop_bits, parity)
+rescue Errno::ENOENT
+  puts "Serial port not available! Please connect and push enter or 'q' to abort."
+  command = gets.chomp
+  if command == "q"
+    abort "Terminated by user input!"
+  else
+    retry
+  end  
+end 
+
 sp.read_timeout = 100
 
 #Push enter to cause output of remnants
-sp.write command + "\n"
+sp.write "\n"
 input = sp.gets()
 puts "Remnants:"
 puts input
@@ -116,11 +130,12 @@ begin
       finished = true
       puts "----------- Testresult------------"
       puts testResult
-      sendTestResult testResult , false
       if testResult.index("TEST FAILED") != nil
         puts "TEST FAILED!"
+        sendTestResult testResult , false
       else
         puts "Test successful!"
+      sendTestResult testResult , true
       end  
     end  
   else

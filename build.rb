@@ -15,12 +15,12 @@ $srcdir = "./testsrc"            #From some kind of config - later
 $ACCESS_TOKEN = ENV['GITTOKEN']
 fork = ENV['PX4FORK']
     
-def do_clone (branch)
+def do_clone (branch, html_url)
     puts "do_clone: " + branch
     system 'mkdir', '-p', $srcdir
     Dir.chdir($srcdir) do
         #git clone <url> --branch <branch> --single-branch [<folder>]
-        result = `git clone --depth 500 https://github.com/hanssaurer/Firmware.git --branch #{branch} --single-branch `
+        result = `git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch `
         puts result
         Dir.chdir("./Firmware") do
             result = `git submodule init && git submodule update`
@@ -62,7 +62,7 @@ end
 
 # ---------- Routing ------------
 get '/' do
-  'Hallo unbekannt'
+  'Hello unknown'
 end
 post '/payload' do
 
@@ -89,21 +89,21 @@ post '/payload' do
         branch = body['ref']
         a = branch.split('/')
         branch = a[a.count-1]           #last part is the bare branchname
-        puts "Going to clone branch: " + branch
-        do_clone  branch
+        puts "Going to clone branch: " + branch + "from "+ body['repository']['html_url']
+        do_clone  branch, body['repository']['html_url']
         do_build
+
 
 #Hot - call testrun in child process and detach
 pid = Process.fork
 if pid.nil? then
   # In child
+  #exec "pwd"
   exec "ruby hwtest.rb"
 else
   # In parent
   Process.detach(pid)
 end
-
-
 
 
     else

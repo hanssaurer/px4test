@@ -44,10 +44,14 @@ The generation of Github tokens is explained on the Github help page:
 https://help.github.com/articles/creating-an-access-token-for-command-line-use/
 
 
-### Testing 
+### Running the test environment  
 
-XXX Describe how to run tests
+Start the server
 
-1. run build.rb
-2. run runhwtest.rb
+ruby build.rb
+
+### Standalone hardware tests
+
+You can execute the hardware tests separately.
+ruby hwtest.rb
 
