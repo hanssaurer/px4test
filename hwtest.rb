@@ -27,10 +27,11 @@ def sendTestResult (testResult, success)
   #Environment specific! Please change to your own
   sender = 'hans@saurer.name'
 
-  #XXX Recipient needs to be taken from post
-  recipient1 = 'hans.saurer@t-online.de'
+  contributor = ENV['pushername']
+  email = ENV['pusheremail']
   #???Copy to some control authority
-  recipient2 = 'lm@qgroundcontrol.org'
+  cc1 = 'hans.saurer@t-online.de'
+  cc2 = 'lm@qgroundcontrol.org'
 
   filename = "TestResult.txt"
   marker = "px4-postfix-smtpmail*******"
@@ -51,7 +52,7 @@ def sendTestResult (testResult, success)
 #Heredoc breakds indentation
 mpart1 = <<EOF
 From: px4tester <autotest@px4.io>
-To: px4-contributor <someone@somewhere.org>
+To: #{contributor} #{email}
 CC: Hans Saurer <hans@saurer.name>
 Subject: SMTP e-mail test
 MIME-Version: 1.0
@@ -84,7 +85,7 @@ EOF
 
   #Params: "message-text, sender, recipient, recipient..."
   Net::SMTP.start('localhost') do |smtp|
-    smtp.send_message message, sender, recipient1
+    smtp.send_message message, sender, email, cc1
                                
   end
 

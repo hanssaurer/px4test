@@ -90,9 +90,12 @@ post '/payload' do
         a = branch.split('/')
         branch = a[a.count-1]           #last part is the bare branchname
         puts "Going to clone branch: " + branch + "from "+ body['repository']['html_url']
-        do_clone  branch, body['repository']['html_url']
+        #do_clone  branch, body['repository']['html_url']
         do_build
 
+#Will be placed in method
+ENV['pushername'] = body ['pusher']['name']
+ENV['pusheremail'] = body ['pusher']['email']
 
 #Hot - call testrun in child process and detach
 pid = Process.fork
@@ -100,8 +103,10 @@ if pid.nil? then
   # In child
   #exec "pwd"
   exec "ruby hwtest.rb"
+#  exec "ruby tstsub.rb"
 else
   # In parent
+  puts "PID: " + pid.to_s
   Process.detach(pid)
 end
 
