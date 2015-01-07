@@ -1,6 +1,8 @@
 require 'sinatra'
 require 'json'
 require 'octokit'
+require 'open3'
+
 
 #You can write Visual-Basic in any language!
 
@@ -14,38 +16,74 @@ $srcdir = "./testsrc"            #From some kind of config - later
 
 $ACCESS_TOKEN = ENV['GITTOKEN']
 fork = ENV['PX4FORK']
+
+def do_work (command)
+
+  Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
+
+    while line = stdout_err.gets
+      puts "OUT>" + line
+    end
+    exit_status = wait_thr.value
+    unless exit_status.success?
+      abort "The command #{command} failed!"
+    end
+  end  
+end  
+
     
 def do_clone (branch, html_url)
     puts "do_clone: " + branch
     system 'mkdir', '-p', $srcdir
     Dir.chdir($srcdir) do
         #git clone <url> --branch <branch> --single-branch [<folder>]
-        result = `git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch `
-        puts result
+        #result = `git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch `
+        #puts result
+        do_work "git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch"
         Dir.chdir("./Firmware") do
-            result = `git submodule init && git submodule update`
-            puts result
+            #result = `git submodule init && git submodule update`
+            #puts result
+            do_work "git submodule init && git submodule update"
         end
     end
 end    
     
 def do_build ()
-    puts "build"
+    puts "Starting build"
     Dir.chdir($srcdir+"/Firmware") do
+=begin        
         result = `git submodule init`
+puts "********************************** git submodule init *******************************************"
         puts result
         result = `git submodule update`
+puts "********************************** git submodule update *******************************************"
         puts result
         result = `git submodule status`
+puts "********************************** git submodule status *******************************************"
         puts result
         result = `make distclean`
+puts "********************************** make distclean *******************************************"
         puts result
         result = `make archives`
+puts "********************************** make archives *******************************************"
         puts result
         result = `make -j6 px4fmu-v2_default`
+puts "********************************** make -j6 px4fmu-v2_default *******************************************"
         puts result
-        result = `make upload px4fmu-v2_default`
+
+puts "\n\n**********make upload px4fmu-v2_default aufgerufen************"
+        result = `make upload px4fmu-v2_test`
+        #result = `Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_default.px4`
+puts "********************************** make upload px4fmu-v2_default *******************************************"
         puts result
+=end    
+        do_work  "git submodule init"
+        do_work  "git submodule update"
+        do_work  "git submodule status"
+        do_work  "make distclean"
+        do_work  "make archives"
+        do_work  "make -j6 px4fmu-v2_default"
+        do_work  "make upload px4fmu-v2_test"
     end
 end    
 
@@ -57,6 +95,23 @@ def set_PR_Status (prstatus)
     #puts pr['head']['sha']
     client.create_status(pr['base']['repo']['full_name'], pr['head']['sha'], prstatus)
     puts "done!"
+end    
+
+def fork_hwtest
+#Starts the hardware test in a subshell
+
+pid = Process.fork
+if pid.nil? then
+  # In child
+  #exec "pwd"
+  exec "ruby hwtest.rb"
+#  exec "ruby tstsub.rb"
+else
+  # In parent
+  puts "PID: " + pid.to_s
+  Process.detach(pid)
+end
+
 end    
 
 
@@ -72,6 +127,9 @@ post '/payload' do
 
     github_event = request.env['HTTP_X_GITHUB_EVENT']
     puts "Event: " + github_event
+    #Set environment vars for sub processes
+    ENV['pushername'] = body ['pusher']['name']
+    ENV['pusheremail'] = body ['pusher']['email']
     case github_event
     when 'ping'
         "Hello"    
@@ -90,26 +148,10 @@ post '/payload' do
         a = branch.split('/')
         branch = a[a.count-1]           #last part is the bare branchname
         puts "Going to clone branch: " + branch + "from "+ body['repository']['html_url']
-        #do_clone  branch, body['repository']['html_url']
+        do_clone  branch, body['repository']['html_url']
         do_build
 
-#Will be placed in method
-ENV['pushername'] = body ['pusher']['name']
-ENV['pusheremail'] = body ['pusher']['email']
-
-#Hot - call testrun in child process and detach
-pid = Process.fork
-if pid.nil? then
-  # In child
-  #exec "pwd"
-  exec "ruby hwtest.rb"
-#  exec "ruby tstsub.rb"
-else
-  # In parent
-  puts "PID: " + pid.to_s
-  Process.detach(pid)
-end
-
+        fork_hwtest
 
     else
         puts "unknown event"

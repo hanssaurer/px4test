@@ -4,34 +4,33 @@
  
 require "serialport"
 require 'net/smtp'
+require 'open3'
 
+puts "------- Hardware-Test running in sub shell --------"
  
-#params for serial port
-port_str = "/dev/tty.usbmodemDDD5D1D3"  #last is 1 or 3
-baud_rate = 57600
-data_bits = 8
-stop_bits = 1
-parity = SerialPort::NONE
 
 #Other params
-testcmd = "make upload px4fmu-v2_test"
+#testcmd = "make upload px4fmu-v2_test"
+testcmd = "Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_test.px4"
 $srcdir = "./testsrc"
 
 #some variables need to be initialized
 testResult = ""
-command = ""
 finished = false
 
 def sendTestResult (testResult, success)
 
-  #Environment specific! Please change to your own
-  sender = 'hans@saurer.name'
+  #Environment specific! Must be added to config
+  sender = ENV['MAILSENDER']
 
   contributor = ENV['pushername']
   email = ENV['pusheremail']
   #???Copy to some control authority
   cc1 = 'hans.saurer@t-online.de'
   cc2 = 'lm@qgroundcontrol.org'
+  #For standalone testing
+  if email.nil? then email = cc1 end
+
 
   filename = "TestResult.txt"
   marker = "px4-postfix-smtpmail*******"
@@ -91,47 +90,78 @@ EOF
 
 end
 
-#Open serial port - safe
-begin
-  sp = SerialPort.new(port_str, baud_rate, data_bits, stop_bits, parity)
-rescue Errno::ENOENT
-  puts "Serial port not available! Please connect and push enter or 'q' to abort."
-  command = gets.chomp
-  if command == "q"
-    abort "Terminated by user input!"
-  else
-    retry
-  end  
-end 
+def openserialport (timeout)
+  #Open serial port - safe
+  #params for serial port
 
-sp.read_timeout = 100
+  port_str = "/dev/tty.usbmodemDDD5D1D3"  #last is 1 or 3
+  baud_rate = 57600
+  data_bits = 8
+  stop_bits = 1
+  parity = SerialPort::NONE
+
+  begin
+    sp = SerialPort.new(port_str, baud_rate, data_bits, stop_bits, parity)
+    sp.read_timeout = timeout
+    return sp
+  rescue Errno::ENOENT
+    puts "Serial port not available! Please disconnect, wait 5 seconds and connect"
+    sleep(1)
+    retry
+  end 
+end
+
+def do_work (command)
+
+  Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
+
+    while line = stdout_err.gets
+      puts "OUT>" + line
+    end
+    exit_status = wait_thr.value
+    unless exit_status.success?
+      abort "The command #{command} failed!"
+    end
+  end  
+end  
+
+sp = openserialport 100
 
 #Push enter to cause output of remnants
 sp.write "\n"
 input = sp.gets()
 puts "Remnants:"
 puts input
+sp.close
 
 Dir.chdir($srcdir+"/Firmware") do
-  result = `#{testcmd}`
-  puts "Result: " + result 
-  puts "---------- end of result------------"
+  #puts "Call: " + testcmd
+  #result = `#{testcmd}`
+  puts "---------------command output---------------"
+  do_work testcmd  
+  puts "---------- end of command output------------"
 end
 
-sp = nil
-sp = SerialPort.new(port_str, baud_rate, data_bits, stop_bits, parity)
-sp.read_timeout = 5000             #wait a little longer 
+sp = openserialport 5000
+sleep(5)
 
 begin
-  input = sp.gets()
-  if input != nil and !input.empty?
-    #puts "<" + input
+  begin
+    input = sp.gets()
+  rescue Errno::ENXIO  
+    puts "Serial port not available! Please connect"
+    sleep(1)
+    sp = openserialport 5000
+    retry
+  end
+  if !input.nil?
+  #if input != nil and !input.empty?
     testResult = testResult + input
-    if testResult.index("nsh>") != nil
+    if testResult.include? "NuttShell"
       finished = true
-      puts "----------- Testresult------------"
+      puts "---------------- Testresult----------------"
       puts testResult
-      if testResult.index("TEST FAILED") != nil
+      if testResult.include? "TEST FAILED"  or testResult.include? "failed"
         puts "TEST FAILED!"
         sendTestResult testResult , false
       else
@@ -140,6 +170,7 @@ begin
       end  
     end  
   else
+    finished = true
     puts "No input from serial port"
   end  
 end until finished
