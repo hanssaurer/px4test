@@ -6,13 +6,14 @@ require "serialport"
 require 'net/smtp'
 require 'open3'
 
-puts "------- Hardware-Test running in sub shell --------"
+puts "----------------- Hardware-Test running ----------------"
  
 
 #Other params
 #testcmd = "make upload px4fmu-v2_test"
 testcmd = "Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_test.px4"
-$srcdir = "./testsrc"
+$srcdir = ENV['srcdir']
+puts "Source directory: " + $srcdir
 
 #some variables need to be initialized
 testResult = ""
@@ -84,7 +85,8 @@ EOF
 
   #Params: "message-text, sender, recipient, recipient..."
   Net::SMTP.start('localhost') do |smtp|
-    smtp.send_message message, sender, email, cc1
+    #smtp.send_message message, sender, email, cc1
+    smtp.send_message message, sender, cc2, cc1
                                
   end
 

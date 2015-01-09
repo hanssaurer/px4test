@@ -12,7 +12,7 @@ set :environment, :production
 set :server, :thin
 set :port, 4567
 
-$srcdir = "./testsrc"            #From some kind of config - later
+$srcdir = "./default_testsrc"            #From some kind of config - later
 
 $ACCESS_TOKEN = ENV['GITTOKEN']
 fork = ENV['PX4FORK']
@@ -120,40 +120,45 @@ get '/' do
   'Hello unknown'
 end
 post '/payload' do
+  body = JSON.parse(request.body.read)
+  puts "I got some JSON: " + JSON.pretty_generate(body)
+  puts "Envelope: " + JSON.pretty_generate(request.env)
 
-    body = JSON.parse(request.body.read)
-    puts "I got some JSON: " + JSON.pretty_generate(body)
-    puts "Envelope: " + JSON.pretty_generate(request.env)
+  github_event = request.env['HTTP_X_GITHUB_EVENT']
+  puts "Event: " + github_event
 
-    github_event = request.env['HTTP_X_GITHUB_EVENT']
-    puts "Event: " + github_event
+  case github_event
+  when 'ping'
+        "Hello"    
+  when 'pull_request'
+    pr = body["pull_request"]
+    mydir = body['sha']
+    puts "Source directory: #{mydir}"
+    branch = pr["base"]["ref"]
+    a = branch.split('/')
+    branch = a[a.count-1]           #last part is the bare branchname
+    puts "Pull Request! Going to clone branch: " + branch
+    #do_clone  branch
+    #do_build
+    #set_PR_Status('success')
+    #fork_hwtest
+  when 'push'
+    branch = body['ref']
+    $srcdir = body['head_commit']['id']
+    puts "Source directory: #{$srcdir}"
+    ENV['srcdir'] = $srcdir
     #Set environment vars for sub processes
     ENV['pushername'] = body ['pusher']['name']
     ENV['pusheremail'] = body ['pusher']['email']
-    case github_event
-    when 'ping'
-        "Hello"    
-    when 'pull_request'
-        #puts body.keys
-        pr = body["pull_request"]
-        branch = pr["base"]["ref"]
-        a = branch.split('/')
-        branch = a[a.count-1]           #last part is the bare branchname
-        puts "Going to clone branch: " + branch
-        do_clone  branch
-        do_build
-        set_PR_Status('success')
-    when 'push'
-        branch = body['ref']
-        a = branch.split('/')
-        branch = a[a.count-1]           #last part is the bare branchname
-        puts "Going to clone branch: " + branch + "from "+ body['repository']['html_url']
-        do_clone  branch, body['repository']['html_url']
-        do_build
+    a = branch.split('/')
+    branch = a[a.count-1]           #last part is the bare branchname
+    puts "Going to clone branch: " + branch + "from "+ body['repository']['html_url']
+    #do_clone  branch, body['repository']['html_url']
+    #do_build
 
-        fork_hwtest
+    fork_hwtest
 
-    else
-        puts "unknown event"
-    end
+  else
+    puts "unknown event"
+  end
 end
