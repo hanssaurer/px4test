@@ -143,6 +143,8 @@ end
 post '/payload' do
   body = JSON.parse(request.body.read)
   github_event = request.env['HTTP_X_GITHUB_EVENT']
+  srcdir = body['head_commit']['id']
+  ENV['srcdir'] = srcdir
 
   case github_event
   when 'ping'
@@ -159,9 +161,7 @@ post '/payload' do
     fork_hwtest pr, srcdir, branch, body['repository']['html_url']
   when 'push'
     branch = body['ref']
-    srcdir = body['head_commit']['id']
     puts "Source directory: #{$srcdir}"
-    ENV['srcdir'] = srcdir
     #Set environment vars for sub processes
     ENV['pushername'] = body ['pusher']['name']
     ENV['pusheremail'] = body ['pusher']['email']
