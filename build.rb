@@ -143,24 +143,25 @@ end
 post '/payload' do
   body = JSON.parse(request.body.read)
   github_event = request.env['HTTP_X_GITHUB_EVENT']
+  puts "I got some JSON: " + JSON.pretty_generate(body)
 
   case github_event
   when 'ping'
         "Hello"    
   when 'pull_request'
     pr = body["pull_request"]
-    srcdir = body['sha']
+    number = body['number'];
+    srcdir = pr['head']['sha']
     ENV['srcdir'] = srcdir
     puts "Source directory: #{srcdir}"
     #Set environment vars for sub processes
-    ENV['pushername'] = body ['pusher']['name']
-    ENV['pusheremail'] = body ['pusher']['email']
-    branch = pr["base"]["ref"]
-    a = branch.split('/')
-    branch = a[a.count-1]           #last part is the bare branchname
-    puts "Pull request: Cloning branch: " + branch + "from "+ body['repository']['html_url']
+    ENV['pushername'] = body['sender']['user']
+    ENV['pusheremail'] = "lorenz@px4.io"
+    branch = pr['head']['ref']
+    url = pr['head']['repo']['html_url']
+    puts "Pull request: Cloning branch: " + branch + "from "+ url
     set_PR_Status pr, 'pending'
-    fork_hwtest pr, srcdir, branch, body['repository']['html_url']
+    fork_hwtest pr, srcdir, branch, url
   when 'push'
     branch = body['ref']
     srcdir = body['head_commit']['id']
@@ -179,7 +180,6 @@ post '/payload' do
 
   else
     puts "unknown event:"
-    puts "I got some JSON: " + JSON.pretty_generate(body)
     puts "Envelope: " + JSON.pretty_generate(request.env)
     puts "Event: " + github_event
 
