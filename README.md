@@ -37,6 +37,8 @@ To run the system, a config file called config.txt should be created in this dir
 
 export GITTOKEN=[GITHUBTOKEN]
 export PX4FORK=[FORK, use "PX4" as default]
+# NSH serial port, depends on HW setup
+export NSHPORT=/dev/tty.usbmodemDDD5D1D3
 
 ```
 

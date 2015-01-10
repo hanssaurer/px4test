@@ -2,7 +2,7 @@ require 'sinatra'
 require 'json'
 require 'octokit'
 require 'open3'
-
+require 'fileutils'
 
 #You can write Visual-Basic in any language!
 
@@ -12,8 +12,6 @@ set :environment, :production
 set :server, :thin
 set :port, 4567
 
-$srcdir = "./default_testsrc"            #From some kind of config - later
-
 $ACCESS_TOKEN = ENV['GITTOKEN']
 fork = ENV['PX4FORK']
 
@@ -22,7 +20,7 @@ def do_work (command)
   Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
 
     while line = stdout_err.gets
-      puts "OUT>" + line
+      puts "OUT> " + line
     end
     exit_status = wait_thr.value
     unless exit_status.success?
@@ -32,25 +30,34 @@ def do_work (command)
 end  
 
     
-def do_clone (branch, html_url)
+def do_clone (srcdir, branch, html_url)
     puts "do_clone: " + branch
-    system 'mkdir', '-p', $srcdir
-    Dir.chdir($srcdir) do
+    system 'mkdir', '-p', srcdir
+    Dir.chdir(srcdir) do
         #git clone <url> --branch <branch> --single-branch [<folder>]
         #result = `git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch `
         #puts result
         do_work "git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch"
-        Dir.chdir("./Firmware") do
+        Dir.chdir("Firmware") do
             #result = `git submodule init && git submodule update`
             #puts result
-            do_work "git submodule init && git submodule update"
+            do_work "git submodule init"
+            do_work "git submodule update"
         end
     end
-end    
+end
+
+def do_master_merge (srcdir)
+    puts "do_merge "
+    Dir.chdir(srcdir + "/Firmware") do
+        do_work "git remote add upstream https://github.com/PX4/Firmware.git"
+        do_work "git pull upstream master"
+    end
+end
     
-def do_build ()
+def do_build (srcdir)
     puts "Starting build"
-    Dir.chdir($srcdir+"/Firmware") do
+    Dir.chdir(srcdir+"/Firmware") do
 =begin        
         result = `git submodule init`
 puts "********************************** git submodule init *******************************************"
@@ -77,38 +84,52 @@ puts "\n\n**********make upload px4fmu-v2_default aufgerufen************"
 puts "********************************** make upload px4fmu-v2_default *******************************************"
         puts result
 =end    
-        do_work  "git submodule init"
-        do_work  "git submodule update"
-        do_work  "git submodule status"
-        do_work  "make distclean"
-        do_work  "make archives"
-        do_work  "make -j6 px4fmu-v2_default"
-        do_work  "make upload px4fmu-v2_test"
+        do_work  'BOARDS="px4fmu-v2 px4io-v2" make archives'
+        do_work  "make -j8 px4fmu-v2_test"
     end
 end    
 
-def set_PR_Status (prstatus)
+def set_PR_Status (pr, prstatus)
+
+  if !pr.nil?
     puts "Access token: " + $ACCESS_TOKEN
     client = Octokit::Client.new(:access_token => $ACCESS_TOKEN)
     #puts client.user.location
     #puts pr['base']['repo']['full_name']
     #puts pr['head']['sha']
     client.create_status(pr['base']['repo']['full_name'], pr['head']['sha'], prstatus)
-    puts "done!"
+    puts "Set PR status:" + prstatus
+  end
 end    
 
-def fork_hwtest
+def fork_hwtest (pr, srcdir, branch, url)
 #Starts the hardware test in a subshell
 
 pid = Process.fork
 if pid.nil? then
   # In child
   #exec "pwd"
-  exec "ruby hwtest.rb"
+  do_clone srcdir, branch, url
+  if !pr.nil?
+    do_master_merge srcdir
+  end
+  do_build srcdir
+  system 'ruby hwtest.rb'
+  puts "HW TEST RESULT:" + $?.exitstatus.to_s
+
+  if ($?.exitstatus == 0) then
+    set_PR_Status pr, 'success'
+  else
+    set_PR_Status pr, 'failed'
+  end
+
+  # Clean up by deleting the work directory
+  FileUtils.rm_rf(srcdir)
+
 #  exec "ruby tstsub.rb"
 else
   # In parent
-  puts "PID: " + pid.to_s
+  puts "Worker PID: " + pid.to_s
   Process.detach(pid)
 end
 
@@ -121,11 +142,7 @@ get '/' do
 end
 post '/payload' do
   body = JSON.parse(request.body.read)
-  puts "I got some JSON: " + JSON.pretty_generate(body)
-  puts "Envelope: " + JSON.pretty_generate(request.env)
-
   github_event = request.env['HTTP_X_GITHUB_EVENT']
-  puts "Event: " + github_event
 
   case github_event
   when 'ping'
@@ -138,27 +155,29 @@ post '/payload' do
     a = branch.split('/')
     branch = a[a.count-1]           #last part is the bare branchname
     puts "Pull Request! Going to clone branch: " + branch
-    #do_clone  branch
-    #do_build
-    #set_PR_Status('success')
-    #fork_hwtest
+    set_PR_Status pr, 'pending'
+    fork_hwtest pr, srcdir, branch, body['repository']['html_url']
   when 'push'
     branch = body['ref']
-    $srcdir = body['head_commit']['id']
+    srcdir = body['head_commit']['id']
     puts "Source directory: #{$srcdir}"
-    ENV['srcdir'] = $srcdir
+    ENV['srcdir'] = srcdir
     #Set environment vars for sub processes
     ENV['pushername'] = body ['pusher']['name']
     ENV['pusheremail'] = body ['pusher']['email']
     a = branch.split('/')
     branch = a[a.count-1]           #last part is the bare branchname
-    puts "Going to clone branch: " + branch + "from "+ body['repository']['html_url']
-    #do_clone  branch, body['repository']['html_url']
-    #do_build
+    puts "Cloning branch: " + branch + "from "+ body['repository']['html_url']
 
-    fork_hwtest
+    fork_hwtest nil, srcdir, branch, body['repository']['html_url']
+  when 'status'
+    puts "Ignoring GH status update"
 
   else
-    puts "unknown event"
+    puts "unknown event:"
+    puts "I got some JSON: " + JSON.pretty_generate(body)
+    puts "Envelope: " + JSON.pretty_generate(request.env)
+    puts "Event: " + github_event
+
   end
 end

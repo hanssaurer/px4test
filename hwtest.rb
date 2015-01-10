@@ -13,6 +13,8 @@ puts "----------------- Hardware-Test running ----------------"
 #testcmd = "make upload px4fmu-v2_test"
 testcmd = "Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_test.px4"
 $srcdir = ENV['srcdir']
+$nshport = ENV['NSHPORT']
+
 puts "Source directory: " + $srcdir
 
 #some variables need to be initialized
@@ -21,6 +23,7 @@ finished = false
 
 def sendTestResult (testResult, success)
 
+  puts "Sending feedback email"
   #Environment specific! Must be added to config
   sender = ENV['MAILSENDER']
 
@@ -42,7 +45,7 @@ def sendTestResult (testResult, success)
     body = "The test FAILED!"
   end 
   body = body + "\nFor details see attachment.\n\n"
-  body = body + "This is a automatically generated mail. Do not reply to the sender."
+  body = body + "This is a automatically generated mail. Do not reply to the sender.\n\n"
 
   attachcontent = testResult
 
@@ -51,10 +54,9 @@ def sendTestResult (testResult, success)
 #Recipients not listed as To or CC will be BCC
 #Heredoc breakds indentation
 mpart1 = <<EOF
-From: px4tester <autotest@px4.io>
-To: #{contributor} #{email}
-CC: Hans Saurer <hans@saurer.name>
-Subject: SMTP e-mail test
+From: PX4 Hardware Test <#{sender}>
+To: #{contributor} <#{email}>
+Subject: On-hardware test result for PX4/Firmware
 MIME-Version: 1.0
 Content-Type: multipart/mixed; boundary=#{marker}
 --#{marker}
@@ -85,8 +87,7 @@ EOF
 
   #Params: "message-text, sender, recipient, recipient..."
   Net::SMTP.start('localhost') do |smtp|
-    #smtp.send_message message, sender, email, cc1
-    smtp.send_message message, sender, cc2, cc1
+    smtp.send_message message, sender, email, cc2, cc1
                                
   end
 
@@ -96,7 +97,7 @@ def openserialport (timeout)
   #Open serial port - safe
   #params for serial port
 
-  port_str = "/dev/tty.usbmodemDDD5D1D3"  #last is 1 or 3
+  port_str = $nshport
   baud_rate = 57600
   data_bits = 8
   stop_bits = 1
