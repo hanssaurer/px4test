@@ -151,7 +151,7 @@ post '/payload' do
     pr = body["pull_request"]
     srcdir = body['sha']
     ENV['srcdir'] = srcdir
-    puts "Source directory: #{mydir}"
+    puts "Source directory: #{srcdir}"
     #Set environment vars for sub processes
     ENV['pushername'] = body ['pusher']['name']
     ENV['pusheremail'] = body ['pusher']['email']
