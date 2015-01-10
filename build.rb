@@ -143,24 +143,28 @@ end
 post '/payload' do
   body = JSON.parse(request.body.read)
   github_event = request.env['HTTP_X_GITHUB_EVENT']
-  srcdir = body['head_commit']['id']
-  ENV['srcdir'] = srcdir
 
   case github_event
   when 'ping'
         "Hello"    
   when 'pull_request'
     pr = body["pull_request"]
-    mydir = body['sha']
+    srcdir = body['sha']
+    ENV['srcdir'] = srcdir
     puts "Source directory: #{mydir}"
+    #Set environment vars for sub processes
+    ENV['pushername'] = body ['pusher']['name']
+    ENV['pusheremail'] = body ['pusher']['email']
     branch = pr["base"]["ref"]
     a = branch.split('/')
     branch = a[a.count-1]           #last part is the bare branchname
-    puts "Pull Request! Going to clone branch: " + branch
+    puts "Pull request: Cloning branch: " + branch + "from "+ body['repository']['html_url']
     set_PR_Status pr, 'pending'
     fork_hwtest pr, srcdir, branch, body['repository']['html_url']
   when 'push'
     branch = body['ref']
+    srcdir = body['head_commit']['id']
+    ENV['srcdir'] = srcdir
     puts "Source directory: #{$srcdir}"
     #Set environment vars for sub processes
     ENV['pushername'] = body ['pusher']['name']
