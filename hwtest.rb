@@ -164,7 +164,7 @@ begin
       finished = true
       puts "---------------- Testresult----------------"
       puts testResult
-      if testResult.include? "TEST FAILED"  or testResult.include? "failed"
+      if testResult.include? "TEST FAILED"
         puts "TEST FAILED!"
         sendTestResult testResult , false
       else
