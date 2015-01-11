@@ -90,20 +90,23 @@ puts "********************************** make upload px4fmu-v2_default *********
     end
 end    
 
-def set_PR_Status (pr, prstatus)
+def set_PR_Status (repo, sha, prstatus, description)
 
-  if !pr.nil?
-    puts "Access token: " + $ACCESS_TOKEN
-    client = Octokit::Client.new(:access_token => $ACCESS_TOKEN)
-    #puts client.user.location
-    #puts pr['base']['repo']['full_name']
-    #puts pr['head']['sha']
-    client.create_status(pr['base']['repo']['full_name'], pr['head']['sha'], prstatus)
-    puts "Set PR status:" + prstatus
-  end
+  puts "Access token: " + $ACCESS_TOKEN
+  client = Octokit::Client.new(:access_token => $ACCESS_TOKEN)
+  # XXX replace the URL below with the web server status details URL
+  options = {
+    "state" => prstatus,
+    "target_url" => "http://px4.io/dev/unit_tests",
+    "description" => description,
+    "context" => "continuous-integration/hans-ci"
+  };
+  puts "Setting commit status on repo: " + repo + " sha: " + sha + " to: " + prstatus + " description: " + description
+  res = client.create_status(repo, sha, prstatus, options)
+  puts res
 end    
 
-def fork_hwtest (pr, srcdir, branch, url)
+def fork_hwtest (pr, srcdir, branch, url, full_repo_name, sha)
 #Starts the hardware test in a subshell
 
 pid = Process.fork
@@ -123,6 +126,9 @@ if pid.nil? then
   # XXX for now, we just bet on timing - yay!
   FileUtils.touch(lf)
 
+  # Clean up any mess left behind by a previous potential fail
+  FileUtils.rm_rf(srcdir)
+
   # In child
   #exec "pwd"
   do_clone srcdir, branch, url
@@ -134,9 +140,9 @@ if pid.nil? then
   puts "HW TEST RESULT:" + $?.exitstatus.to_s
 
   if ($?.exitstatus == 0) then
-    set_PR_Status pr, 'success'
+    set_PR_Status full_repo_name, sha, 'success', 'Hardware test on Pixhawk passed!'
   else
-    set_PR_Status pr, 'failed'
+    set_PR_Status full_repo_name, sha, 'failed', 'Hardware test on Pixhawk FAILED!'
   end
 
   # Clean up by deleting the work directory
@@ -175,7 +181,9 @@ post '/payload' do
     puts pr['state']
     action = body['action']
     if (['opened', 'reopened'].include?(action))
-      srcdir = pr['head']['sha']
+      sha = pr['head']['sha']
+      srcdir = sha
+      full_name = pr['base']['repo']['full_name']
       ENV['srcdir'] = srcdir
       puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
@@ -184,8 +192,8 @@ post '/payload' do
       branch = pr['head']['ref']
       url = pr['head']['repo']['html_url']
       puts "Adding to queue: Pull request: #{number} " + branch + " from "+ url
-      set_PR_Status pr, 'pending'
-      fork_hwtest pr, srcdir, branch, url
+      set_PR_Status full_name, sha, 'pending', 'Running test on Pixhawk hardware..'
+      fork_hwtest pr, srcdir, branch, url, full_name, sha
       'Pull request event queued for testing.'
     else
       puts 'Ignoring closing of pull request #' + String(number)
@@ -194,7 +202,8 @@ post '/payload' do
     branch = body['ref']
 
     if !(body['head_commit'].nil?) && body['head_commit'] != 'null'
-      srcdir = body['head_commit']['id']
+      sha = body['head_commit']['id']
+      srcdir = sha
       ENV['srcdir'] = srcdir
       puts "Source directory: #{$srcdir}"
       #Set environment vars for sub processes
@@ -203,8 +212,10 @@ post '/payload' do
       a = branch.split('/')
       branch = a[a.count-1]           #last part is the bare branchname
       puts "Adding to queue: Branch: " + branch + " from "+ body['repository']['html_url']
-
-      fork_hwtest nil, srcdir, branch, body['repository']['html_url']
+      full_name = body['repository']['full_name']
+      puts "Full name: " + full_name
+      set_PR_Status full_name, sha, 'pending', 'Running test on Pixhawk hardware..'
+      fork_hwtest nil, srcdir, branch, body['repository']['html_url'], full_name, sha
       'Push event queued for testing.'
     end
   when 'status'

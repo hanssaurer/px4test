@@ -14,12 +14,24 @@ puts "----------------- Hardware-Test running ----------------"
 testcmd = "Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_test.px4"
 $srcdir = ENV['srcdir']
 $nshport = ENV['NSHPORT']
+$ACCESS_TOKEN = ENV['GITTOKEN']
 
 puts "Source directory: " + $srcdir
 
 #some variables need to be initialized
 testResult = ""
 finished = false
+
+def sendCommitComment(testResult, status, full_path, sha)
+
+  # Full path similar to: "PX4/Firmware"
+  # sha: Git hash
+
+  # API docs: https://octokit.github.io/octokit.rb/Octokit/Client/CommitComments.html#create_commit_comment-instance_method
+
+  client = Octokit::Client.new(:access_token => $ACCESS_TOKEN)
+  client.create_commit_comment(full_path, sha, "My comment message")
+end
 
 def sendTestResult (testResult, success)
 
@@ -148,6 +160,8 @@ end
 sp = openserialport 5000
 sleep(5)
 
+test_passed = false
+
 begin
   begin
     input = sp.gets()
@@ -166,10 +180,12 @@ begin
       puts testResult
       if testResult.include? "TEST FAILED"
         puts "TEST FAILED!"
-        sendTestResult testResult , false
+        test_passed = false
+        sendTestResult testResult, test_passed
       else
+        test_passed = true
         puts "Test successful!"
-      sendTestResult testResult , true
+        sendTestResult testResult, test_passed
       end  
     end  
   else
@@ -178,4 +194,11 @@ begin
   end  
 end until finished
 
-sp.close                   
+sp.close
+
+# Provide exit status
+if (test_passed)
+  exit 0
+else
+  exit 1
+end
