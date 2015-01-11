@@ -48,7 +48,7 @@ def do_clone (srcdir, branch, html_url)
 end
 
 def do_master_merge (srcdir, base_repo, base_branch)
-    puts "do_merge "
+    puts "do_merge of #{base_repo}/#{base_branch}"
     Dir.chdir(srcdir + "/Firmware") do
         do_work "git remote add base_repo #{base_repo}.git"
         do_work "git fetch base_repo"
@@ -171,8 +171,10 @@ post '/payload' do
         "Hello"    
   when 'pull_request'
     pr = body["pull_request"]
-    number = body['number'];
-    if (pr['action'] != 'closed')
+    number = body['number']
+    puts pr['state']
+    action = body['action']
+    if (['opened', 'reopened'].include?(action))
       srcdir = pr['head']['sha']
       ENV['srcdir'] = srcdir
       puts "Source directory: #{srcdir}"
@@ -181,7 +183,7 @@ post '/payload' do
       ENV['pusheremail'] = "lorenz@px4.io"
       branch = pr['head']['ref']
       url = pr['head']['repo']['html_url']
-      puts "Pull request: #{number} Cloning branch: " + branch + " from "+ url
+      puts "Adding to queue: Pull request: #{number} " + branch + " from "+ url
       set_PR_Status pr, 'pending'
       fork_hwtest pr, srcdir, branch, url
       'Pull request event queued for testing.'
@@ -200,7 +202,7 @@ post '/payload' do
       ENV['pusheremail'] = body ['pusher']['email']
       a = branch.split('/')
       branch = a[a.count-1]           #last part is the bare branchname
-      puts "Cloning branch: " + branch + " from "+ body['repository']['html_url']
+      puts "Adding to queue: Branch: " + branch + " from "+ body['repository']['html_url']
 
       fork_hwtest nil, srcdir, branch, body['repository']['html_url']
       'Push event queued for testing.'
@@ -211,6 +213,8 @@ post '/payload' do
     puts 'Ignoring GH fork repo event'
   when 'delete'
     puts 'Ignoring GH delete branch event'
+  when 'issue_comment'
+    puts 'Ignoring comments'
 
   else
     puts "Unhandled request:"
