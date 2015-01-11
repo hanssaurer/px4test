@@ -47,11 +47,12 @@ def do_clone (srcdir, branch, html_url)
     end
 end
 
-def do_master_merge (srcdir)
+def do_master_merge (srcdir, base_repo, base_branch)
     puts "do_merge "
     Dir.chdir(srcdir + "/Firmware") do
-        do_work "git remote add upstream https://github.com/PX4/Firmware.git"
-        do_work "git pull upstream master"
+        do_work "git remote add base_repo #{base_repo}.git"
+        do_work "git fetch base_repo"
+        do_work "git merge base_repo/#{base_branch} -m 'Merged #{base_repo}/#{base_branch} into test branch'"
     end
 end
     
@@ -126,7 +127,7 @@ if pid.nil? then
   #exec "pwd"
   do_clone srcdir, branch, url
   if !pr.nil?
-    do_master_merge srcdir
+    do_master_merge srcdir, pr['base']['repo']['html_url'], pr['base']['ref']
   end
   do_build srcdir
   system 'ruby hwtest.rb'
@@ -180,9 +181,10 @@ post '/payload' do
       ENV['pusheremail'] = "lorenz@px4.io"
       branch = pr['head']['ref']
       url = pr['head']['repo']['html_url']
-      puts "Pull request: #{number} Cloning branch: " + branch + "from "+ url
+      puts "Pull request: #{number} Cloning branch: " + branch + " from "+ url
       set_PR_Status pr, 'pending'
       fork_hwtest pr, srcdir, branch, url
+      'Pull request event queued for testing.'
     else
       puts 'Ignoring closing of pull request #' + String(number)
     end
@@ -198,9 +200,10 @@ post '/payload' do
       ENV['pusheremail'] = body ['pusher']['email']
       a = branch.split('/')
       branch = a[a.count-1]           #last part is the bare branchname
-      puts "Cloning branch: " + branch + "from "+ body['repository']['html_url']
+      puts "Cloning branch: " + branch + " from "+ body['repository']['html_url']
 
       fork_hwtest nil, srcdir, branch, body['repository']['html_url']
+      'Push event queued for testing.'
     end
   when 'status'
     puts "Ignoring GH status event"
