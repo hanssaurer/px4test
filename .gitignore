@@ -2,3 +2,5 @@
 testsrc/
 config.txt
 tstsub.rb
+.lockfile
+.subl*

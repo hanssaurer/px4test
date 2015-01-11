@@ -107,6 +107,21 @@ def fork_hwtest (pr, srcdir, branch, url)
 
 pid = Process.fork
 if pid.nil? then
+
+  lf = '.lockfile'
+
+  # XXX put this into a function and check for a free worker
+  # also requires to name directories after the free worker
+  while File.file?(lf)
+    # Keep waiting as long as the lock file exists
+    sleep(1)
+  end
+
+  # This is the critical section - we might want to lock it
+  # using a 2nd file, or something smarter and proper.
+  # XXX for now, we just bet on timing - yay!
+  FileUtils.touch(lf)
+
   # In child
   #exec "pwd"
   do_clone srcdir, branch, url
@@ -126,6 +141,9 @@ if pid.nil? then
   # Clean up by deleting the work directory
   FileUtils.rm_rf(srcdir)
 
+  # We're done - delete lock file
+  FileUtils.rm_rf(lf)
+
 #  exec "ruby tstsub.rb"
 else
   # In parent
@@ -140,10 +158,12 @@ end
 get '/' do
   'Hello unknown'
 end
+get '/payload' do
+  "This URL is intended to be used with POST, not GET"
+end
 post '/payload' do
   body = JSON.parse(request.body.read)
   github_event = request.env['HTTP_X_GITHUB_EVENT']
-  puts "I got some JSON: " + JSON.pretty_generate(body)
 
   case github_event
   when 'ping'
@@ -151,37 +171,49 @@ post '/payload' do
   when 'pull_request'
     pr = body["pull_request"]
     number = body['number'];
-    srcdir = pr['head']['sha']
-    ENV['srcdir'] = srcdir
-    puts "Source directory: #{srcdir}"
-    #Set environment vars for sub processes
-    ENV['pushername'] = body['sender']['user']
-    ENV['pusheremail'] = "lorenz@px4.io"
-    branch = pr['head']['ref']
-    url = pr['head']['repo']['html_url']
-    puts "Pull request: Cloning branch: " + branch + "from "+ url
-    set_PR_Status pr, 'pending'
-    fork_hwtest pr, srcdir, branch, url
+    if (pr['action'] != 'closed')
+      srcdir = pr['head']['sha']
+      ENV['srcdir'] = srcdir
+      puts "Source directory: #{srcdir}"
+      #Set environment vars for sub processes
+      ENV['pushername'] = body['sender']['user']
+      ENV['pusheremail'] = "lorenz@px4.io"
+      branch = pr['head']['ref']
+      url = pr['head']['repo']['html_url']
+      puts "Pull request: #{number} Cloning branch: " + branch + "from "+ url
+      set_PR_Status pr, 'pending'
+      fork_hwtest pr, srcdir, branch, url
+    else
+      puts 'Ignoring closing of pull request #' + String(number)
+    end
   when 'push'
     branch = body['ref']
-    srcdir = body['head_commit']['id']
-    ENV['srcdir'] = srcdir
-    puts "Source directory: #{$srcdir}"
-    #Set environment vars for sub processes
-    ENV['pushername'] = body ['pusher']['name']
-    ENV['pusheremail'] = body ['pusher']['email']
-    a = branch.split('/')
-    branch = a[a.count-1]           #last part is the bare branchname
-    puts "Cloning branch: " + branch + "from "+ body['repository']['html_url']
 
-    fork_hwtest nil, srcdir, branch, body['repository']['html_url']
+    if !(body['head_commit'].nil?) && body['head_commit'] != 'null'
+      srcdir = body['head_commit']['id']
+      ENV['srcdir'] = srcdir
+      puts "Source directory: #{$srcdir}"
+      #Set environment vars for sub processes
+      ENV['pushername'] = body ['pusher']['name']
+      ENV['pusheremail'] = body ['pusher']['email']
+      a = branch.split('/')
+      branch = a[a.count-1]           #last part is the bare branchname
+      puts "Cloning branch: " + branch + "from "+ body['repository']['html_url']
+
+      fork_hwtest nil, srcdir, branch, body['repository']['html_url']
+    end
   when 'status'
-    puts "Ignoring GH status update"
+    puts "Ignoring GH status event"
+  when 'fork'
+    puts 'Ignoring GH fork repo event'
+  when 'delete'
+    puts 'Ignoring GH delete branch event'
 
   else
-    puts "unknown event:"
+    puts "Unhandled request:"
     puts "Envelope: " + JSON.pretty_generate(request.env)
-    puts "Event: " + github_event
+    puts "JSON: " + JSON.pretty_generate(body)
+    puts "Unknown Event: " + github_event
 
   end
 end

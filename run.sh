@@ -12,5 +12,8 @@ fi
 # Grab config from local file
 source config.txt
 
+# Delete any remaining left-over lockfiles
+rm -rf .lockfile*
+
 echo -e "Running build test"
 ruby build.rb
