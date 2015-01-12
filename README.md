@@ -52,7 +52,11 @@ Start the server
 
 ruby build.rb
 
-### Standalone hardware tests
+#### Auto Updating
+
+Add watchdog.sh to a crontab entry. It will produce no outputs during normal operation and will update and restart the server if this GIT repository updates.
+
+#### Standalone hardware tests
 
 You can execute the hardware tests separately.
 ruby hwtest.rb
