@@ -226,6 +226,8 @@ post '/payload' do
     puts 'Ignoring GH delete branch event'
   when 'issue_comment'
     puts 'Ignoring comments'
+  when 'issues'
+    puts 'Ignoring issues'
 
   else
     puts "Unhandled request:"
