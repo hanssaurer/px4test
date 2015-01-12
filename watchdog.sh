@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Watchdog script to be called by a cron job
@@ -7,12 +8,13 @@
 #  2) Checks for updates via GIT
 #
 
-SCRIPT_PATH=$PWD
+SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 TEST_GIT_REMOTENAME=origin
 TEST_GIT_BRANCHNAME=master
 SCREEN_SESSION="hans-ci"
 
 # fetch latest build system version
+echo -e "Changing dir to $SCRIPT_PATH"
 cd $SCRIPT_PATH
 
 # only update if system is not running
