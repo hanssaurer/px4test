@@ -14,7 +14,6 @@ TEST_GIT_BRANCHNAME=master
 SCREEN_SESSION="hans-ci"
 
 # fetch latest build system version
-echo -e "Changing dir to $SCRIPT_PATH"
 cd $SCRIPT_PATH
 
 # only update if system is not running
