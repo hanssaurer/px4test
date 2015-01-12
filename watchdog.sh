@@ -42,3 +42,6 @@ git pull $TEST_GIT_REMOTENAME $TEST_GIT_BRANCHNAME || exit 1
 screen -dmS $SCREEN_SESSION
 # Issue the ./run.sh command inside that session
 screen -S $SCREEN_SESSION -p 0 -X stuff $'./run.sh\n'
+# Mail a note
+echo "Test system updated successfully." | mail -s "PX4 HW Test System Updated" lorenz@px4.io -f autotest@px4.io
+echo "Test system updated successfully." | mail -s "PX4 HW Test System Updated" hans@px4.io -f autotest@px4.io
