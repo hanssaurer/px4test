@@ -1,10 +1,13 @@
-**Hardware-Test CI - Outline
+##Hardware-Test CI - Outline
 
 [The fundamental issue is communication, not documentation!] (http://www.agilemodeling.com/essays/agileDocumentation.htm#ModelsDocumentsSourceCode)
 
 Goal: Test a contribution on px4 Hardware
 
-***Sequence Outline:
+##Prerequisits
+
+Postfix mailserver must be started and some environment variables must be set
+see settings/constants
 
 WebHook set on repository to be tested.
 
@@ -15,56 +18,101 @@ Trigger:
 
 Persistent WebHook: http://[ip or host]:4567/payload
 
+###Sequence Outline:
 
-Server calls px4clone.rb in subprocess
-with branch and html_url as parameters
+On post\payload do
+    
+    case event
+    when Pull Request
+      grab pull request
+      determine request reference data
+      set environment vars
+      set request pending
+      call clone - build - hwtest
+    when Push
+      determine request reference data
+      set environment vars
+      set request pending
+      call clone - build - hwtest
+    else
+      notify and ignore
 
-px4clone.rb - Clone
-while lockfile exists and is not stale wait
+###Clone Commands
 
     git clone --depth 500 #{html_url}.git --branch #{branch} –single-branch
     git submodule init
     git submodule update
-    git submodule status
+    (git submodule status)
+    
+Additional command when Pull Request
+    git remote add base_repo #{base_repo}.git
+    git fetch base_repo
+    git merge base_repo/#{base_branch} -m 'Merged #{base_repo}/#{base_branch} into test branch'
 
-Executes px4make.rb (exec) and exits, staying in the subprocess
 
-px4make.rb - Build
+###Build Commands
 
-make distclean
-make archives
-make -j6 px4fmu-v2_test"
+    BOARDS="px4fmu-v2 px4io-v2" make archives
+    make -j8 px4fmu-v2_test
 
-Executes hwtest.rb (exec) and exits, staying in the subprocess
+###Hardware Test Command(s)
 
-hwtest.rb  - Test
-
-make upload px4fmu-v2_test
-
-Scan test output for errors
+    Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_test.px4
+    
+Grab putput of serial port and scan output for error messages
 (failed = testResult.include? "TEST FAILED"  or testResult.include? "failed")
-?Analyse and store detailed test results
-
-- Publish Test Results
-
-
-Set status of PR via Octokit
-client.create_status(pr['base']['repo']['full_name'], pr['head']['sha'], 'success')
-
-?Create comment on commit (push) – Has no status
-
 
 Send test output by mail
-?Post state of PR on Website
+Log activity in file (in the long run in database)
 
 
-Settings / Constants
+Set status of commit via Octokit
+client.create_status(pr['base']['repo']['full_name'], pr['head']['sha'], 'success')
+
+###Locking/Unlocking Measures
+
+???
+
+###Settings / Constants
+In file config.txt
 
 export GITTOKEN=[GITHUBTOKEN]
 export PX4FORK=[FORK, use "PX4" as default]
-# NSH serial port, depends on HW setup
+NSH serial port, depends on HW setup
 export NSHPORT=/dev/tty.usbmodemDDD5D1D3
-export MAILSENDER=	yourname@yourserver
+export MAILSENDER=yourname@yourserver
 
 
+###Mailserver Setup
+In File: /etc/postfix/main.cf
+
+smtp_sasl_auth_enable = yes
+smtp_sasl_password_maps = static:web354p3:px4SMTP2014Incoming_
+smtp_sasl_security_options = noanonymous
+smtp_tls_security_level = may
+smtp_use_tls = yes
+header_size_limit = 4096000
+relayhost = login-105.hoststar.ch:587
+
+My differing settings (yet to be adjusted)
+
+myhostname = www.hosting-agency.de
+smtpd_sender_restrictions = permit_inet_interfaces
+relayhost = smtp.hosting-agency.de
+smtp_sasl_auth_enable = yes
+smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
+smtp_sasl_security_options = noanonymous
+
+
+git commands to stay up to date with forked repo
+
+Commands to execute one time
+git remote add upstream https://github.com/PX4/Firmware.git
+git checkout master
+git submodule init
+
+Commands to execute on each time
+git pull upstream master
+git submodule update
+git push origin master
 
