@@ -15,6 +15,33 @@ set :port, 4567
 $ACCESS_TOKEN = ENV['GITTOKEN']
 fork = ENV['PX4FORK']
 
+$lf = '.lockfile'
+
+def do_lock(board)
+  # XXX put this into a function and check for a free worker
+  # also requires to name directories after the free worker
+  while File.file?(board)
+    # Check if the lock file is really old, if yes, take our chances and wipe it
+    if ((Time.now - File.stat(board).mtime).to_i > (60 * 10)) then
+      unlock('boardname')
+      break
+    end
+
+    # Keep waiting as long as the lock file exists
+    sleep(1)
+  end
+
+  # This is the critical section - we might want to lock it
+  # using a 2nd file, or something smarter and proper.
+  # XXX for now, we just bet on timing - yay!
+  FileUtils.touch(lf)
+end
+
+def do_unlock(board)
+  # We're done - delete lock file
+  FileUtils.rm_rf(board)
+end
+
 def do_work (command)
 
   Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
@@ -24,6 +51,7 @@ def do_work (command)
     end
     exit_status = wait_thr.value
     unless exit_status.success?
+      do_unlock($lf)
       abort "The command #{command} failed!"
     end
   end  
@@ -58,33 +86,7 @@ end
     
 def do_build (srcdir)
     puts "Starting build"
-    Dir.chdir(srcdir+"/Firmware") do
-=begin        
-        result = `git submodule init`
-puts "********************************** git submodule init *******************************************"
-        puts result
-        result = `git submodule update`
-puts "********************************** git submodule update *******************************************"
-        puts result
-        result = `git submodule status`
-puts "********************************** git submodule status *******************************************"
-        puts result
-        result = `make distclean`
-puts "********************************** make distclean *******************************************"
-        puts result
-        result = `make archives`
-puts "********************************** make archives *******************************************"
-        puts result
-        result = `make -j6 px4fmu-v2_default`
-puts "********************************** make -j6 px4fmu-v2_default *******************************************"
-        puts result
-
-puts "\n\n**********make upload px4fmu-v2_default aufgerufen************"
-        result = `make upload px4fmu-v2_test`
-        #result = `Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_default.px4`
-puts "********************************** make upload px4fmu-v2_default *******************************************"
-        puts result
-=end    
+    Dir.chdir(srcdir+"/Firmware") do    
         do_work  'BOARDS="px4fmu-v2 px4io-v2" make archives'
         do_work  "make -j8 px4fmu-v2_test"
     end
@@ -112,25 +114,13 @@ def fork_hwtest (pr, srcdir, branch, url, full_repo_name, sha)
 pid = Process.fork
 if pid.nil? then
 
-  lf = '.lockfile'
-
-  # XXX put this into a function and check for a free worker
-  # also requires to name directories after the free worker
-  while File.file?(lf)
-    # Keep waiting as long as the lock file exists
-    sleep(1)
-  end
-
-  # This is the critical section - we might want to lock it
-  # using a 2nd file, or something smarter and proper.
-  # XXX for now, we just bet on timing - yay!
-  FileUtils.touch(lf)
+  # Lock this board for operations
+  do_lock($lf)
 
   # Clean up any mess left behind by a previous potential fail
   FileUtils.rm_rf(srcdir)
 
   # In child
-  #exec "pwd"
   do_clone srcdir, branch, url
   if !pr.nil?
     do_master_merge srcdir, pr['base']['repo']['html_url'], pr['base']['ref']
@@ -148,10 +138,9 @@ if pid.nil? then
   # Clean up by deleting the work directory
   FileUtils.rm_rf(srcdir)
 
-  # We're done - delete lock file
-  FileUtils.rm_rf(lf)
+  # Unlock this board
+  do_unlock($lf)
 
-#  exec "ruby tstsub.rb"
 else
   # In parent
   puts "Worker PID: " + pid.to_s

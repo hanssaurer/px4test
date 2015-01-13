@@ -12,15 +12,27 @@ SCRIPT_PATH=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 TEST_GIT_REMOTENAME=origin
 TEST_GIT_BRANCHNAME=master
 SCREEN_SESSION="hans-ci"
+LOCKFILE=".lockfile"
 
 # fetch latest build system version
 cd $SCRIPT_PATH
 
 # only update if system is not running
-if [ -a ".lockfile" ]
+if [ -a $LOCKFILE ]
 then
-  echo -e "Running, abort."
-  exit 0
+
+  # check how old the lockfile actually is. Time out after 20 mins.
+  filemtime=`stat -c %Y $LOCKFILE`
+  currtime=`date +%s`
+  diff=$(( (currtime - filemtime) ))
+  echo "Lockfile age: $diff seconds"
+
+  if (( diff > 60 * 20 )); then
+  	rm -rf $LOCKFILE
+  else
+  	echo -e "Running, abort."
+  	exit 0
+  fi
 fi
 
 # system is not building, run update
