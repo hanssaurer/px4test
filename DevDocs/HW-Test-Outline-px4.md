@@ -59,14 +59,14 @@ Additional command when Pull Request
 
     Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_test.px4
     
-Grab putput of serial port and scan output for error messages
+Grab putput of serial port and scan output for error messages  
 (failed = testResult.include? "TEST FAILED"  or testResult.include? "failed")
 
-Send test output by mail
+Send test output by mail  
 Log activity in file (in the long run in database)
 
 
-Set status of commit via Octokit
+Set status of commit via Octokit  
 client.create_status(pr['base']['repo']['full_name'], pr['head']['sha'], 'success')
 
 ###Locking/Unlocking Measures
@@ -74,45 +74,45 @@ client.create_status(pr['base']['repo']['full_name'], pr['head']['sha'], 'succes
 ???
 
 ###Settings / Constants
-In file config.txt
+In file config.txt  
 
-export GITTOKEN=[GITHUBTOKEN]
-export PX4FORK=[FORK, use "PX4" as default]
-NSH serial port, depends on HW setup
-export NSHPORT=/dev/tty.usbmodemDDD5D1D3
-export MAILSENDER=yourname@yourserver
+export GITTOKEN=[GITHUBTOKEN]  
+export PX4FORK=[FORK, use "PX4" as default]  
+NSH serial port, depends on HW setup  
+export NSHPORT=/dev/tty.usbmodemDDD5D1D3  
+export MAILSENDER=yourname@yourserver  
 
 
 ###Mailserver Setup
 In File: /etc/postfix/main.cf
 
-smtp_sasl_auth_enable = yes
-smtp_sasl_password_maps = static:web354p3:px4SMTP2014Incoming_
-smtp_sasl_security_options = noanonymous
-smtp_tls_security_level = may
-smtp_use_tls = yes
-header_size_limit = 4096000
-relayhost = login-105.hoststar.ch:587
+smtp_sasl_auth_enable = yes  
+smtp_sasl_password_maps = static:web354p3:px4SMTP2014Incoming_  
+smtp_sasl_security_options = noanonymous  
+smtp_tls_security_level = may  
+smtp_use_tls = yes  
+header_size_limit = 4096000  
+relayhost = login-105.hoststar.ch:587  
 
-My differing settings (yet to be adjusted)
+My differing settings (yet to be adjusted)  
 
-myhostname = www.hosting-agency.de
-smtpd_sender_restrictions = permit_inet_interfaces
-relayhost = smtp.hosting-agency.de
-smtp_sasl_auth_enable = yes
-smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
-smtp_sasl_security_options = noanonymous
+myhostname = www.hosting-agency.de  
+smtpd_sender_restrictions = permit_inet_interfaces  
+relayhost = smtp.hosting-agency.de  
+smtp_sasl_auth_enable = yes  
+smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd  
+smtp_sasl_security_options = noanonymous  
 
 
-git commands to stay up to date with forked repo
+####Git commands to stay up to date with forked repo
 
-Commands to execute one time
-git remote add upstream https://github.com/PX4/Firmware.git
-git checkout master
-git submodule init
+Commands to execute once  
+git remote add upstream https://github.com/PX4/Firmware.git  
+git checkout master  
+git submodule init  
 
-Commands to execute on each time
-git pull upstream master
-git submodule update
-git push origin master
+Commands to execute on each time  
+git pull upstream master  
+git submodule update  
+git push origin master  
 
