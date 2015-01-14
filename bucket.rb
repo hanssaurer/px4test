@@ -3,7 +3,7 @@
 require 'rubygems'
 require 'aws-sdk'
 
-bucket_name = 'px4-travis'
+bucket_name = 'results.dronetest.io'
 file_name = 'test.txt'
 
 File.open(file_name, 'w') {|f| f.write(Time.now.strftime("%d/%m/%Y %H:%M")) }
