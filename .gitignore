@@ -1,5 +1,6 @@
 .DS_Store
 testsrc/
+ditched/
 config.txt
 tstsub.rb
 .lockfile

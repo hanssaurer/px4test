@@ -34,7 +34,7 @@ def do_lock(board)
   # This is the critical section - we might want to lock it
   # using a 2nd file, or something smarter and proper.
   # XXX for now, we just bet on timing - yay!
-  FileUtils.touch(lf)
+  FileUtils.touch($lf)
 end
 
 def do_unlock(board)
@@ -132,7 +132,7 @@ if pid.nil? then
   if ($?.exitstatus == 0) then
     set_PR_Status full_repo_name, sha, 'success', 'Hardware test on Pixhawk passed!'
   else
-    set_PR_Status full_repo_name, sha, 'failed', 'Hardware test on Pixhawk FAILED!'
+    set_PR_Status full_repo_name, sha, 'failure', 'Hardware test on Pixhawk FAILED!'
   end
 
   # Clean up by deleting the work directory
@@ -148,6 +148,18 @@ else
 end
 
 end    
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ---------- Routing ------------
@@ -194,7 +206,7 @@ post '/payload' do
       sha = body['head_commit']['id']
       srcdir = sha
       ENV['srcdir'] = srcdir
-      puts "Source directory: #{$srcdir}"
+      puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
       ENV['pushername'] = body ['pusher']['name']
       ENV['pusheremail'] = body ['pusher']['email']
