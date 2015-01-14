@@ -8,10 +8,29 @@ The current version of sinatra + webrick seems to hate external hosts and will g
 
 ### Installation
 
-Install the dependencies using gem:
+Install OS dependencies via the package manager:
+
+Mac OS:
+```
+brew install opencv
+```
+
+Debian or Ubuntu:
+```
+sudo apt-get install opencvXXX
+```
+
+Install the Ruby dependencies using gem:
 
 ```
-sudo gem install serialport sinatra json octokit thin
+sudo gem install serialport sinatra json octokit thin specific_install aws-sdk
+```
+
+Install our custom rb_webcam gem and rmagick
+
+```
+sudo gem specific_install https://github.com/LorenzMeier/rb_webcam.git
+sudo gem specific_install https://github.com/rmagick/rmagick.git
 ```
 
 ### Configuration
@@ -39,6 +58,8 @@ export GITTOKEN=[GITHUBTOKEN]
 export PX4FORK=[FORK, use "PX4" as default]
 # NSH serial port, depends on HW setup
 export NSHPORT=/dev/tty.usbmodemDDD5D1D3
+export AWS_ACCESS_KEY_ID=access_key_id
+export AWS_SECRET_ACCESS_KEY=secret_access_key
 
 ```
 
