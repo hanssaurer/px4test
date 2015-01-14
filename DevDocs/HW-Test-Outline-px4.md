@@ -20,6 +20,9 @@ Persistent WebHook: http://[ip or host]:4567/payload
 
 ###Sequence Outline:
 
+Set user specific environment variables  
+Check and/or start mailserver
+
 On post\payload do
     
     case event
