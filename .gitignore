@@ -4,3 +4,4 @@ config.txt
 tstsub.rb
 .lockfile
 .subl*
+.hans.yml
