@@ -8,10 +8,29 @@ The current version of sinatra + webrick seems to hate external hosts and will g
 
 ### Installation
 
-Install the dependencies using gem:
+Install OS dependencies via the package manager:
+
+Mac OS:
+```
+brew install opencv
+```
+
+Debian or Ubuntu:
+```
+sudo apt-get install opencvXXX
+```
+
+Install the Ruby dependencies using gem:
 
 ```
-sudo gem install serialport sinatra json octokit thin
+sudo gem install serialport sinatra json octokit thin specific_install aws-sdk
+```
+
+Install our custom rb_webcam gem and rmagick
+
+```
+sudo gem specific_install https://github.com/LorenzMeier/rb_webcam.git
+sudo gem specific_install https://github.com/rmagick/rmagick.git
 ```
 
 ### Configuration
@@ -39,18 +58,73 @@ export GITTOKEN=[GITHUBTOKEN]
 export PX4FORK=[FORK, use "PX4" as default]
 # NSH serial port, depends on HW setup
 export NSHPORT=/dev/tty.usbmodemDDD5D1D3
+export AWS_ACCESS_KEY_ID=access_key_id
+export AWS_SECRET_ACCESS_KEY=secret_access_key
 
 ```
 
 The generation of Github tokens is explained on the Github help page:
 https://help.github.com/articles/creating-an-access-token-for-command-line-use/
 
+Also create a .hans.yml file in the local directory. In contrast to e.g. the .travis.yml this file should not be uploaded,
+but is part of the local, host-specific configuration (and hence part of the .gitignore file).
+
+NOTE: This is work in progress and only partially used
+
+```YAML
+# Build and autotest script for PX4 Firmware
+# http://dronetest.io
+
+hostname: 'zurich01'
+location: 'Zurich'
+
+github:
+  fork: 'PX4'
+  token: '[token]'
+
+aws:
+  key: '[aws key]'
+  secret: '[aws secret]'
+
+sponsor:
+  name: 'Lorenz Meier'
+  email: 'lorenz@px4.io'
+
+# Connected test harnesses
+setups:
+- harness:
+    name: 'FMUv2.4.5'
+    bootloader: '/dev/usb/by-id/XXX'
+    console: '/dev/usb/by-id/YYY'
+    swd:
+      fmu: '/dev/usb/by-id/BBB'
+      io: '/dev/usb/by-id/AAA'
+    branch: 'master'
+    mode: 'soak'
+    usb_power:
+      hub: 1
+      port: 2
+    camera: 0
+
+- harness:
+    name: 'FMUvXXX'
+    bootloader: '/dev/usb/by-id/XXX'
+    console: '/dev/usb/by-id/YYY'
+    swd:
+      fmu: '/dev/usb/by-id/BBB'
+      io: '/dev/usb/by-id/AAA'
+    usb_power:
+      hub: 1
+      port: 3
+    camera: 1
+```
+
 
 ### Running the test environment  
 
 Start the server
 
-ruby build.rb
+./run.sh
 
 #### Auto Updating
 
