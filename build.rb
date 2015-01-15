@@ -229,6 +229,8 @@ post '/payload' do
     puts 'Ignoring comments'
   when 'issues'
     puts 'Ignoring issues'
+  when 'pull_request_review_comment'
+    puts 'Ignoring review comment'
 
   else
     puts "Unhandled request:"
