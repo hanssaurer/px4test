@@ -11,7 +11,6 @@
 . $HOME/.profile
 
 SCRIPT_PATH="${HOME}/src/px4test"
-echo "SCRIPT: ${SCRIPT_PATH}"
 TEST_GIT_REMOTENAME=origin
 TEST_GIT_BRANCHNAME=master
 SCREEN_SESSION="hans-ci"
