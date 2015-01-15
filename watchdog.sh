@@ -8,6 +8,8 @@
 #  2) Checks for updates via GIT
 #
 
+source $HOME/.profile
+
 SCRIPT_PATH=$HOME/src/px4test
 echo "SCRIPT: ${SCRIPT_PATH}"
 TEST_GIT_REMOTENAME=origin
@@ -25,21 +27,21 @@ then
   # check how old the lockfile actually is. Time out after 20 mins.
   filemtime=`stat -c %Y $LOCKFILE`
   currtime=`date +%s`
-  diff=$(( (currtime - filemtime) ))
-  echo "Lockfile age: $diff seconds"
+  difftime=$(( (currtime - filemtime) ))
+  echo "Lockfile age: $difftime seconds"
 
-	if (( diff > 60 * 12 ))
+	if [ $(( difftime > 60 * 12 )) ]
 	then
   		rm -rf $LOCKFILE
 	else
-		echo -e "Running, abort."
+		echo "Running, abort."
 		exit 0
 	fi
 fi
 
 # system is not building, run update
 git fetch $TEST_GIT_REMOTENAME
-git diff $TEST_GIT_REMOTENAME/$TEST_GIT_BRANCHNAME --exit-code
+git diff "$TEST_GIT_REMOTENAME/$TEST_GIT_BRANCHNAME" --exit-code
 RETVAL=$?
 # if the diff value is non-zero kill the process and update
 if [ ! $RETVAL -eq 0 ]
@@ -55,11 +57,12 @@ fi
 
 if [ -z "$(pgrep ruby)" ]
 then
+	echo "Server not running, starting.."
 	# start a new screen session called hans-ci
-	screen -dmS $SCREEN_SESSION
-	# Issue the ./run.sh command inside that session
-	screen -S $SCREEN_SESSION -p 0 -X stuff $'./run.sh\n'
+	screen -dmS $SCREEN_SESSION $SCRIPT_PATH/run.sh
 	# Mail a note
-	echo "Test system updated successfully." | mail -s "PX4 HW Test System Updated" lorenz@px4.io -- -f autotest@px4.io
-	echo "Test system updated successfully." | mail -s "PX4 HW Test System Updated" hans@px4.io -- -f autotest@px4.io
+#	echo "Test system updated successfully." | mail -s "PX4 HW Test System Updated" lorenz@px4.io -- -f autotest@px4.io
+#	echo "Test system updated successfully." | mail -s "PX4 HW Test System Updated" hans@px4.io -- -f autotest@px4.io
+else
+	echo "Server is running."
 fi

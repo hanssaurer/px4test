@@ -11,6 +11,7 @@ fi
 
 # Grab config from local file
 source config.txt
+source $HOME/.profile
 
 # Delete any remaining left-over lockfiles
 rm -rf .lockfile*
