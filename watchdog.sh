@@ -8,9 +8,9 @@
 #  2) Checks for updates via GIT
 #
 
-source $HOME/.profile
+. $HOME/.profile
 
-SCRIPT_PATH=$HOME/src/px4test
+SCRIPT_PATH="${HOME}/src/px4test"
 echo "SCRIPT: ${SCRIPT_PATH}"
 TEST_GIT_REMOTENAME=origin
 TEST_GIT_BRANCHNAME=master
@@ -63,6 +63,4 @@ then
 	# Mail a note
 #	echo "Test system updated successfully." | mail -s "PX4 HW Test System Updated" lorenz@px4.io -- -f autotest@px4.io
 #	echo "Test system updated successfully." | mail -s "PX4 HW Test System Updated" hans@px4.io -- -f autotest@px4.io
-else
-	echo "Server is running."
 fi
