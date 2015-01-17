@@ -17,7 +17,7 @@ brew install opencv
 
 Debian or Ubuntu:
 ```
-sudo apt-get install opencvXXX
+sudo apt-get install libopencv-highgui-dev
 ```
 
 Install the Ruby dependencies using gem:
@@ -30,8 +30,18 @@ Install our custom rb_webcam gem and rmagick
 
 ```
 sudo gem specific_install https://github.com/LorenzMeier/rb_webcam.git
+```
+
+Mac OS:
+```
 sudo gem specific_install https://github.com/rmagick/rmagick.git
 ```
+
+Debian / Ubuntu:
+```
+sudo apt-get install ruby-rmagick
+```
+
 
 ### Configuration
 
