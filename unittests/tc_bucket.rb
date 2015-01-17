@@ -12,9 +12,12 @@ class TestBucket < Test::Unit::TestCase
     bucket_name = 'results.dronetest.io'
     host = 'test01'
     file_name = 'localtest.txt'
-    test_count = '005'
 
-    claimed_dir = "%s/%s" % [host, test_count]
+    # Claim dir
+    puts "Claiming directory"
+    claimed_dir = results_claim_directory(bucket_name, host)
+
+    puts "New dir name: " + claimed_dir + "\n"
 
     # Write test file
     File.open(file_name, 'w') {|f| f.write(Time.now.strftime("%d/%m/%Y %H:%M")) }
@@ -23,12 +26,6 @@ class TestBucket < Test::Unit::TestCase
 
     # Cleanup
     FileUtils.rm_rf(file_name);
-
-    # Claim dir
-    puts "Claiming directory"
-    new_dir_name = results_claim_directory(bucket_name, host)
-
-    puts "New dir name: " + new_dir_name + "\n"
 
     assert_equal(true, upload_result, "Upload test failed")
   end

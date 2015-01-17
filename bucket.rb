@@ -28,14 +28,14 @@ def results_claim_directory(bucket_name, host)
 
   new_folder_index = largest + 1
 
-  s3_new_key = sprintf("%s/%d/", host, new_folder_index)
+  s3_new_key = sprintf("%s/%d", host, new_folder_index)
 
   claimed_file = '.claimed'
   FileUtils.touch(claimed_file)
-  s3.buckets[bucket_name].objects[s3_new_key].write(:file => claimed_file)
+  s3.buckets[bucket_name].objects["%s/%s" % [s3_new_key, claimed_file]].write(:file => claimed_file)
   FileUtils.rm_rf(claimed_file);
 
-  return new_folder_index.to_s
+  return s3_new_key
 end
 
 def results_upload(bucket_name, local_file, results_file)
