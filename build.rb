@@ -15,6 +15,7 @@ set :port, 4567
 
 $ACCESS_TOKEN = ENV['GITTOKEN']
 $commandlog = '/home/drone/commandlog.txt';
+$consolelog = '/home/drone/consolelog.txt';
 $bucket_name = 'results.dronetest.io'
 $host = 'zurich01'
 $results_url = ""
@@ -134,6 +135,7 @@ if pid.nil? then
 
   # Clean up any mess left behind by a previous potential fail
   FileUtils.rm_rf(srcdir)
+  FileUtils.touch($consolelog)
 
   # In child
 
@@ -173,11 +175,13 @@ if pid.nil? then
   # Logfile
   results_upload($bucket_name, $commandlog, '%s/%s' % [s3_dirname, 'commandlog.txt'])
   FileUtils.rm_rf($commandlog)
+  results_upload($bucket_name, $consolelog, '%s/%s' % [s3_dirname, 'consolelog.txt'])
+  FileUtils.rm_rf($consolelog)
   # GIF
   results_upload($bucket_name, 'animated.gif', '%s/%s' % [s3_dirname, 'animated.gif'])
   FileUtils.rm_rf('animated.gif')
 
-  File.open('index.html', 'w') {|f| f.write("<html><head><title>Test Result</title><body><h3>Test Result</h3><img src=\"animated.gif\"><br /><a href=\"commandlog.txt\">Build log</a></body></html>") }
+  File.open('index.html', 'w') {|f| f.write("<html><head><title>Test Result</title><body><h3>Test Result</h3><img src=\"animated.gif\"><br /><a href=\"commandlog.txt\">Build log</a><br /><a href=\"consolelog.txt\">NSH console log</a></body></html>") }
 
   # Index page
   results_upload($bucket_name, 'index.html', '%s/%s' % [s3_dirname, 'index.html'])

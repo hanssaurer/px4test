@@ -14,6 +14,7 @@ testcmd = "Tools/px_uploader.py --port \"/dev/serial/by-id/usb-3D_Robotics*,/dev
 $srcdir = ENV['srcdir']
 $nshport = ENV['NSHPORT']
 $ACCESS_TOKEN = ENV['GITTOKEN']
+$consolelog = '/home/drone/consolelog.txt';
 
 puts "Source directory: " + $srcdir
 
@@ -179,6 +180,7 @@ begin
       finished = true
       puts "---------------- Testresult----------------"
       puts testResult
+      File.open($consolelog, 'w') {|f| f.write(testResult) }
       if testResult.include? "TEST FAILED"
         puts "TEST FAILED!"
         test_passed = false
