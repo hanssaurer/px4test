@@ -24,11 +24,11 @@ class TestBucket < Test::Unit::TestCase
     # Cleanup
     FileUtils.rm_rf(file_name);
 
-  # Claim dir
-  #puts "Claiming directory"
-  #dir = results_claim_directory(bucket_name, host)
+    # Claim dir
+    puts "Claiming directory"
+    new_dir_name = results_claim_directory(bucket_name, host)
 
-  #puts = "New dir: " + dir + "\n"
+    puts "New dir name: " + new_dir_name + "\n"
 
     assert_equal(true, upload_result, "Upload test failed")
   end

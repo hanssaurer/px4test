@@ -1,6 +1,7 @@
 
 require 'rubygems'
 require 'aws-sdk'
+require 'fileutils'
 
 def results_claim_directory(bucket_name, host)
   # Get an instance of the S3 interface.
@@ -12,14 +13,29 @@ def results_claim_directory(bucket_name, host)
     return nil
   end
 
-  filename = ''
+  s3_objects = bucket.objects.with_prefix(host).collect(&:key)
 
-  bucket.objects.each do |obj|
-    filename = obj.key
-    puts filename
+  largest = 0
+
+  s3_objects.each do |s3_path|
+    s3_path.slice! host + "/"
+    s3_number = s3_path.split("/")[0].to_i
+
+    if (s3_number > largest)
+      largest = s3_number
+    end
   end
 
-  return filename
+  new_folder_index = largest + 1
+
+  s3_new_key = sprintf("%s/%d/", host, new_folder_index)
+
+  claimed_file = '.claimed'
+  FileUtils.touch(claimed_file)
+  s3.buckets[bucket_name].objects[s3_new_key].write(:file => claimed_file)
+  FileUtils.rm_rf(claimed_file);
+
+  return new_folder_index.to_s
 end
 
 def results_upload(bucket_name, local_file, results_file)
