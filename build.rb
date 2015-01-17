@@ -52,7 +52,9 @@ def do_work (command)
     exit_status = wait_thr.value
     unless exit_status.success?
       do_unlock($lf)
-      abort "The command #{command} failed!"
+      puts "The command #{command} failed!"
+      # Do not run through the standard exit handlers
+      exit!(1)
     end
   end  
 end  
