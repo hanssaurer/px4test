@@ -58,6 +58,7 @@ export GITTOKEN=[GITHUBTOKEN]
 export PX4FORK=[FORK, use "PX4" as default]
 # NSH serial port, depends on HW setup
 export NSHPORT=/dev/tty.usbmodemDDD5D1D3
+export MAILSENDER=autotest@px4.io
 export AWS_ACCESS_KEY_ID=access_key_id
 export AWS_SECRET_ACCESS_KEY=secret_access_key
 
