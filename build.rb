@@ -4,7 +4,8 @@ require 'octokit'
 require 'open3'
 require 'fileutils'
 
-#You can write Visual-Basic in any language!
+require_relative "bucket"
+require_relative "cam"
 
 set :bind, '0.0.0.0'
 set :environment, :production
@@ -13,7 +14,7 @@ set :server, :thin
 set :port, 4567
 
 $ACCESS_TOKEN = ENV['GITTOKEN']
-$commandlog = 'commandlog.txt';
+$commandlog = '/home/drone/commandlog.txt';
 $bucket_name = 'results.dronetest.io'
 $host = 'zurich01'
 $results_url = ""
@@ -49,7 +50,7 @@ def do_work (command, error_message)
 
   Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
 
-  logfile = open($commandlog, 'a')
+  logfile = File.open($commandlog, 'a')
 
     while line = stdout_err.gets
       puts "OUT> " + line
@@ -62,12 +63,12 @@ def do_work (command, error_message)
       failmsg = "The command #{command} failed!"
       puts failmsg
       logfile << failmsg
-      close(logfile)
+      logfile.close
       # Do not run through the standard exit handlers
       exit!(1)
     end
 
-    close(logfile)
+    logfile.close
   end
 end  
 
