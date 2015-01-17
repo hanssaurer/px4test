@@ -177,7 +177,7 @@ if pid.nil? then
   results_upload($bucket_name, 'animated.gif', '%s/%' % [s3_dirname, 'animated.gif'])
   FileUtils.rm_rf('animated.gif')
 
-  File.open(file_name, 'w') {|f| f.write("<html><head><title>Test Result</title><body><h3>Test Result</h3><img src=\"animated.gif\"><br /><a href=\"commandlog.txt\">Build log</a></body></html>") }
+  File.open('index.html', 'w') {|f| f.write("<html><head><title>Test Result</title><body><h3>Test Result</h3><img src=\"animated.gif\"><br /><a href=\"commandlog.txt\">Build log</a></body></html>") }
 
   # Index page
   results_upload($bucket_name, 'index.html', '%s/%' % [s3_dirname, 'index.html'])
