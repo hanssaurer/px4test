@@ -1,24 +1,32 @@
-## PX4 Test Suite for Continuous Delivery
+## Hans-CI for Continuous Integration on Embedded Hardware
 
-*   Official Website: http://px4.io
+*   Official Website: http://dronetest.io
 
-### Caveats
+### Users
 
-The current version of sinatra + webrick seems to hate external hosts and will go into timeout even if configured for RX address 0.0.0.0 and production. The server script is therefore hardcoded to the thin server.
+  * [PX4 Autopilot Project](http://px4.io)
 
-### Installation
+### Prerequisites
 
 Install OS dependencies via the package manager:
 
-Mac OS:
+## Mac OS
+
 ```
-brew install opencv
+brew install opencv imagemagick
+```
+and RMagick:
+```
+sudo gem specific_install https://github.com/rmagick/rmagick.git
 ```
 
-Debian or Ubuntu:
+## Debian / Ubuntu
+
 ```
-sudo apt-get install libopencv-highgui-dev
+sudo apt-get install libopencv-highgui-dev ruby-rmagick
 ```
+
+### Installation
 
 Install the Ruby dependencies using gem:
 
@@ -32,16 +40,11 @@ Install our custom rb_webcam gem and rmagick
 sudo gem specific_install https://github.com/LorenzMeier/rb_webcam.git
 ```
 
-Mac OS:
-```
-sudo gem specific_install https://github.com/rmagick/rmagick.git
-```
+And finally clone the repository:
 
-Debian / Ubuntu:
 ```
-sudo apt-get install ruby-rmagick
+git clone https://github.com/hanssaurer/px4test.git
 ```
-
 
 ### Configuration
 
@@ -134,15 +137,13 @@ setups:
 ### Running the test environment  
 
 Start the server
-
+```
 ./run.sh
+```
 
-#### Auto Updating
+#### Standalone tests
 
-Add watchdog.sh to a crontab entry. It will produce no outputs during normal operation and will update and restart the server if this GIT repository updates.
-
-#### Standalone hardware tests
-
-You can execute the hardware tests separately.
-ruby hwtest.rb
-
+Run the test script:
+```
+./tests.sh
+```
