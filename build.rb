@@ -53,7 +53,9 @@ def do_work (command, error_message)
     unless exit_status.success?
       do_unlock($lf)
       set_PR_Status $full_repo_name, $sha, 'failure', error_message
-      abort "The command #{command} failed!"
+      puts "The command #{command} failed!"
+      # Do not run through the standard exit handlers
+      exit!(1)
     end
   end  
 end  
