@@ -162,7 +162,7 @@ if pid.nil? then
   # Take webcam image
   take_picture(".")
 
-  timingstr = sprintf("git: %4.2fs build: %4.2fs hw: %4.2fs", tgit_duration, tbuild_duration, thw_duration)
+  timingstr = sprintf("%4.2fs", tgit_duration + tbuild_duration + thw_duration)
 
   if ($?.exitstatus == 0) then
     set_PR_Status full_repo_name, sha, 'success', 'Pixhawk HW test passed: ' + timingstr
