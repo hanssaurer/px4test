@@ -1,8 +1,12 @@
 require 'sinatra'
 require 'json'
 require 'octokit'
-require 'open3'
+#require 'open3'
 require 'fileutils'
+require "serialport"
+$LOAD_PATH << '.'
+require 'ci_utils.rb'
+
 
 #You can write Visual-Basic in any language!
 
@@ -12,6 +16,7 @@ set :environment, :production
 set :server, :thin
 set :port, 4567
 
+$nshport = ENV['NSHPORT']
 $ACCESS_TOKEN = ENV['GITTOKEN']
 fork = ENV['PX4FORK']
 
@@ -42,22 +47,7 @@ def do_unlock(board)
   FileUtils.rm_rf(board)
 end
 
-def do_work (command)
-
-  Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
-
-    while line = stdout_err.gets
-      puts "OUT> " + line
-    end
-    exit_status = wait_thr.value
-    unless exit_status.success?
-      do_unlock($lf)
-      abort "The command #{command} failed!"
-    end
-  end  
-end  
-
-    
+   
 def do_clone (srcdir, branch, html_url)
     puts "do_clone: " + branch
     system 'mkdir', '-p', srcdir
@@ -92,6 +82,106 @@ def do_build (srcdir)
     end
 end    
 
+def openserialport (timeout)
+  #Open serial port - safe
+  #params for serial port
+
+  port_str = $nshport
+  baud_rate = 57600
+  data_bits = 8
+  stop_bits = 1
+  parity = SerialPort::NONE
+
+  begin
+    sp = SerialPort.new(port_str, baud_rate, data_bits, stop_bits, parity)
+    sp.read_timeout = timeout
+    return sp
+  rescue Errno::ENOENT
+    puts "Serial port not available! Please (re)connect!"
+    sleep(1)
+    retry
+  end 
+end
+
+
+def make_hwtest (srcdir)
+# Execute hardware test
+
+#testcmd = "make upload px4fmu-v2_test"
+testcmd = "Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_test.px4"
+
+  #some variables need to be initialized
+  testResult = ""
+  finished = false
+
+  puts "----------------- Hardware-Test running ----------------"
+  sp = openserialport 100
+
+  #Push enter to cause output of remnants
+  sp.write "\n"
+  input = sp.gets()
+  puts "Remnants:"
+  puts input
+  sp.close
+
+  Dir.chdir(srcdir+"/Firmware") do
+    #puts "Call: " + testcmd
+    #result = `#{testcmd}`
+    puts "---------------command output---------------"
+    do_work testcmd  
+    puts "---------- end of command output------------"
+  end
+
+  sp = openserialport 5000
+  sleep(5)
+
+  test_passed = false
+
+  begin
+    begin
+      input = sp.gets()
+    rescue Errno::ENXIO  
+      puts "Serial port not available! Please connect"
+      sleep(1)
+      sp = openserialport 5000
+      retry
+    end
+    if !input.nil?
+    #if input != nil and !input.empty?
+      testResult = testResult + input
+      if testResult.include? "NuttShell"
+        finished = true
+        puts "---------------- Testresult----------------"
+        #puts testResult
+        if testResult.include? "TEST FAILED"
+          puts "TEST FAILED!"
+          test_passed = false
+          make_mmail testResult, test_passed
+          #sendTestResult testResult, test_passed
+        else
+          test_passed = true
+          puts "Test successful!"
+          make_mmail testResult, test_passed
+        end  
+      end  
+    else
+      finished = true
+      puts "No input from serial port"
+    end  
+  end until finished
+
+  sp.close
+
+  # Provide exit status
+  if (test_passed)
+    return 0
+  else
+    return 1
+  end
+
+end
+
+
 def set_PR_Status (repo, sha, prstatus, description)
 
   puts "Access token: " + $ACCESS_TOKEN
@@ -108,7 +198,7 @@ def set_PR_Status (repo, sha, prstatus, description)
   puts res
 end    
 
-def fork_hwtest (pr, srcdir, branch, url, full_repo_name, sha)
+def fork_hwtest (pr, srcdir, branch, url, full_repo_name, sha, old_pid)
 #Starts the hardware test in a subshell
 
 pid = Process.fork
@@ -116,28 +206,35 @@ if pid.nil? then
 
   # Lock this board for operations
   do_lock($lf)
-
+=begin
   # Clean up any mess left behind by a previous potential fail
   FileUtils.rm_rf(srcdir)
-
+=end
   # In child
+
   do_clone srcdir, branch, url
   if !pr.nil?
     do_master_merge srcdir, pr['base']['repo']['html_url'], pr['base']['ref']
   end
   do_build srcdir
-  system 'ruby hwtest.rb'
-  puts "HW TEST RESULT:" + $?.exitstatus.to_s
 
-  if ($?.exitstatus == 0) then
+  #system 'ruby hwtest.rb'
+  #puts "HW TEST RESULT:" + $?.exitstatus.to_s
+  result = make_hwtest srcdir
+  puts "HW TEST RESULT:" + result.to_s
+
+  #if ($?.exitstatus == 0) then
+  if (result == 0) then
     set_PR_Status full_repo_name, sha, 'success', 'Hardware test on Pixhawk passed!'
   else
     set_PR_Status full_repo_name, sha, 'failure', 'Hardware test on Pixhawk FAILED!'
   end
 
+#!!!!! to be removed
+=begin
   # Clean up by deleting the work directory
   FileUtils.rm_rf(srcdir)
-
+=end
   # Unlock this board
   do_unlock($lf)
 
@@ -148,18 +245,6 @@ else
 end
 
 end    
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # ---------- Routing ------------
@@ -177,6 +262,7 @@ post '/payload' do
   when 'ping'
         "Hello"    
   when 'pull_request'
+begin
     pr = body["pull_request"]
     number = body['number']
     puts pr['state']
@@ -185,7 +271,7 @@ post '/payload' do
       sha = pr['head']['sha']
       srcdir = sha
       full_name = pr['base']['repo']['full_name']
-      ENV['srcdir'] = srcdir
+      #ENV['srcdir'] = srcdir
       puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
       ENV['pushername'] = body['sender']['user']
@@ -199,13 +285,15 @@ post '/payload' do
     else
       puts 'Ignoring closing of pull request #' + String(number)
     end
+end
+puts "Pull Request"    
   when 'push'
     branch = body['ref']
 
     if !(body['head_commit'].nil?) && body['head_commit'] != 'null'
       sha = body['head_commit']['id']
       srcdir = sha
-      ENV['srcdir'] = srcdir
+      #ENV['srcdir'] = srcdir
       puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
       ENV['pushername'] = body ['pusher']['name']
@@ -215,8 +303,8 @@ post '/payload' do
       puts "Adding to queue: Branch: " + branch + " from "+ body['repository']['html_url']
       full_name = body['repository']['full_name']
       puts "Full name: " + full_name
-      set_PR_Status full_name, sha, 'pending', 'Running test on Pixhawk hardware..'
-      fork_hwtest nil, srcdir, branch, body['repository']['html_url'], full_name, sha
+      #set_PR_Status full_name, sha, 'pending', 'Running test on Pixhawk hardware..'
+      fork_hwtest nil, srcdir, branch, body['repository']['html_url'], full_name, sha, pid
       'Push event queued for testing.'
     end
   when 'status'
