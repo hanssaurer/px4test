@@ -42,7 +42,7 @@ def do_unlock(board)
   FileUtils.rm_rf(board)
 end
 
-def do_work (command)
+def do_work (command, error_message)
 
   Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
 
@@ -52,6 +52,7 @@ def do_work (command)
     exit_status = wait_thr.value
     unless exit_status.success?
       do_unlock($lf)
+      set_PR_Status $full_repo_name, $sha, 'failure', error_message
       puts "The command #{command} failed!"
       # Do not run through the standard exit handlers
       exit!(1)
@@ -67,12 +68,12 @@ def do_clone (srcdir, branch, html_url)
         #git clone <url> --branch <branch> --single-branch [<folder>]
         #result = `git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch `
         #puts result
-        do_work "git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch"
+        do_work "git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch", "Cloning repo failed."
         Dir.chdir("Firmware") do
             #result = `git submodule init && git submodule update`
             #puts result
-            do_work "git submodule init"
-            do_work "git submodule update"
+            do_work "git submodule init", "GIT submodule init failed"
+            do_work "git submodule update", "GIT submodule init failed"
         end
     end
 end
@@ -80,17 +81,17 @@ end
 def do_master_merge (srcdir, base_repo, base_branch)
     puts "do_merge of #{base_repo}/#{base_branch}"
     Dir.chdir(srcdir + "/Firmware") do
-        do_work "git remote add base_repo #{base_repo}.git"
-        do_work "git fetch base_repo"
-        do_work "git merge base_repo/#{base_branch} -m 'Merged #{base_repo}/#{base_branch} into test branch'"
+        do_work "git remote add base_repo #{base_repo}.git", "GIT adding upstream failed"
+        do_work "git fetch base_repo", "GIT fetching upstream failed"
+        do_work "git merge base_repo/#{base_branch} -m 'Merged #{base_repo}/#{base_branch} into test branch'", "Failed merging #{base_repo}/#{base_branch}"
     end
 end
     
 def do_build (srcdir)
     puts "Starting build"
     Dir.chdir(srcdir+"/Firmware") do    
-        do_work  'BOARDS="px4fmu-v2 px4io-v2" make archives'
-        do_work  "make -j8 px4fmu-v2_test"
+        do_work  'BOARDS="px4fmu-v2 px4io-v2" make archives', "make archives failed"
+        do_work  "make -j8 px4fmu-v2_test", "make px4fmu-v2_test failed"
     end
 end    
 
@@ -123,18 +124,31 @@ if pid.nil? then
   FileUtils.rm_rf(srcdir)
 
   # In child
+
+  # Set relevant global variables for PR status
+  $full_repo_name = full_repo_name
+  $sha = sha
+
+  tgit_start = Time.now
   do_clone srcdir, branch, url
   if !pr.nil?
     do_master_merge srcdir, pr['base']['repo']['html_url'], pr['base']['ref']
   end
+  tgit_duration = Time.now - tgit_start
+  tbuild_start = Time.now
   do_build srcdir
+  tbuild_duration = Time.now - tbuild_start
+  thw_start = Time.now
   system 'ruby hwtest.rb'
   puts "HW TEST RESULT:" + $?.exitstatus.to_s
+  thw_duration = Time.now - thw_start
+
+  timingstr = sprintf("git: %4.2fs build: %4.2fs hw: %4.2fs", tgit_duration, tbuild_duration, thw_duration)
 
   if ($?.exitstatus == 0) then
-    set_PR_Status full_repo_name, sha, 'success', 'Hardware test on Pixhawk passed!'
+    set_PR_Status full_repo_name, sha, 'success', 'Pixhawk HW test passed: ' + timingstr
   else
-    set_PR_Status full_repo_name, sha, 'failure', 'Hardware test on Pixhawk FAILED!'
+    set_PR_Status full_repo_name, sha, 'failure', 'Pixhawk HW test FAILED: ' + timingstr
   end
 
   # Clean up by deleting the work directory
