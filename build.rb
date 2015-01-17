@@ -13,7 +13,10 @@ set :server, :thin
 set :port, 4567
 
 $ACCESS_TOKEN = ENV['GITTOKEN']
-fork = ENV['PX4FORK']
+$commandlog = 'commandlog.txt';
+$bucket_name = 'results.dronetest.io'
+$host = 'zurich01'
+$results_url = ""
 
 $lf = '.lockfile'
 
@@ -46,18 +49,26 @@ def do_work (command, error_message)
 
   Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
 
+  logfile = open($commandlog, 'a')
+
     while line = stdout_err.gets
       puts "OUT> " + line
+      logfile << line
     end
     exit_status = wait_thr.value
     unless exit_status.success?
       do_unlock($lf)
       set_PR_Status $full_repo_name, $sha, 'failure', error_message
-      puts "The command #{command} failed!"
+      failmsg = "The command #{command} failed!"
+      puts failmsg
+      logfile << failmsg
+      close(logfile)
       # Do not run through the standard exit handlers
       exit!(1)
     end
-  end  
+
+    close(logfile)
+  end
 end  
 
     
@@ -102,7 +113,7 @@ def set_PR_Status (repo, sha, prstatus, description)
   # XXX replace the URL below with the web server status details URL
   options = {
     "state" => prstatus,
-    "target_url" => "http://px4.io/dev/unit_tests",
+    "target_url" => $results_url,
     "description" => description,
     "context" => "continuous-integration/hans-ci"
   };
@@ -125,6 +136,10 @@ if pid.nil? then
 
   # In child
 
+  s3_dirname = results_claim_directory($bucket_name, $host)
+
+  $results_url = sprintf("http://%s/%s", $bucket_name, s3_dirname);
+
   # Set relevant global variables for PR status
   $full_repo_name = full_repo_name
   $sha = sha
@@ -143,6 +158,9 @@ if pid.nil? then
   puts "HW TEST RESULT:" + $?.exitstatus.to_s
   thw_duration = Time.now - thw_start
 
+  # Take webcam image
+  take_picture(".")
+
   timingstr = sprintf("git: %4.2fs build: %4.2fs hw: %4.2fs", tgit_duration, tbuild_duration, thw_duration)
 
   if ($?.exitstatus == 0) then
@@ -150,6 +168,19 @@ if pid.nil? then
   else
     set_PR_Status full_repo_name, sha, 'failure', 'Pixhawk HW test FAILED: ' + timingstr
   end
+
+  # Logfile
+  results_upload($bucket_name, $commandlog, '%s/%' % [s3_dirname, $commandlog])
+  FileUtils.rm_rf($commandlog)
+  # GIF
+  results_upload($bucket_name, 'animated.gif', '%s/%' % [s3_dirname, 'animated.gif'])
+  FileUtils.rm_rf('animated.gif')
+
+  File.open(file_name, 'w') {|f| f.write("<html><head><title>Test Result</title><body><h3>Test Result</h3><img src=\"animated.gif\"><br /><a href=\"commandlog.txt\">Build log</a></body></html>") }
+
+  # Index page
+  results_upload($bucket_name, 'index.html', '%s/%' % [s3_dirname, 'index.html'])
+  FileUtils.rm_rf('index.html')
 
   # Clean up by deleting the work directory
   FileUtils.rm_rf(srcdir)
