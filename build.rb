@@ -10,6 +10,13 @@ require 'ci_utils.rb'
 
 require_relative "bucket"
 require_relative "cam"
+require 'yaml'
+
+config = begin
+  YAML.load(File.open(".hans.yml"))
+rescue ArgumentError => e
+  puts "Could not parse .hans.yml: #{e.message}"
+end
 
 set :bind, '0.0.0.0'
 set :environment, :production
@@ -17,13 +24,13 @@ set :environment, :production
 set :server, :thin
 set :port, 4567
 
-$nshport = ENV['NSHPORT']
-$ACCESS_TOKEN = ENV['GITTOKEN']
+$nshport = config['nshport']
+$access_token = config['github']['token']
 $logdir = './'
 $commandlog = 'commandlog.txt'
 $consolelog = 'consolelog.txt'
 $bucket_name = 'results.dronetest.io'
-$host = 'zurich01'
+$test_host = config['hostname']
 $results_url = ""
 $continuous_branch = nil
 
@@ -232,14 +239,14 @@ end
 
 def set_PR_Status (repo, sha, prstatus, description)
 
-  puts "Access token: " + $ACCESS_TOKEN
-  client = Octokit::Client.new(:access_token => $ACCESS_TOKEN)
+  puts "Access token: " + $access_token
+  client = Octokit::Client.new(:access_token => $access_token)
   # XXX replace the URL below with the web server status details URL
   options = {
     "state" => prstatus,
     "target_url" => $results_url,
     "description" => description,
-    "context" => "continuous-integration/hans-ci"
+    "context" => "continuous-integration/hans-ci/#{$test_host}"
   };
   puts "Setting commit status on repo: " + repo + " sha: " + sha + " to: " + prstatus + " description: " + description
   res = client.create_status(repo, sha, prstatus, options)
@@ -261,7 +268,7 @@ if pid.nil? then
 
   # In child
 
-  s3_dirname = results_claim_directory($bucket_name, $host)
+  s3_dirname = results_claim_directory($bucket_name, $test_host)
 
   $results_url = sprintf("http://%s/%s/index.html", $bucket_name, s3_dirname);
   results_still = sprintf("http://%s/%s/still.jpg", $bucket_name, s3_dirname);
@@ -366,7 +373,7 @@ post '/payload' do
       #Set environment vars for sub processes
 
       # Pull last commiter email for PR from GH
-      client = Octokit::Client.new(:access_token => $ACCESS_TOKEN)
+      client = Octokit::Client.new(:access_token => $access_token)
       commit = client.commit(full_name, sha)
       pushername = commit['commit']['author']['name']
       pusheremail = commit['commit']['author']['email']
