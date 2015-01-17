@@ -1,17 +1,41 @@
-#!/usr/bin/env ruby
 
 require 'rubygems'
 require 'aws-sdk'
 
-bucket_name = 'results.dronetest.io'
-file_name = 'test.txt'
+def results_claim_directory(bucket_name, host)
+  # Get an instance of the S3 interface.
+  s3 = AWS::S3.new
+  bucket = s3.buckets[bucket_name]
 
-File.open(file_name, 'w') {|f| f.write(Time.now.strftime("%d/%m/%Y %H:%M")) }
+  if !bucket.exists?
+    puts 'Bucket ' + bucket_name + ' does not exit!'
+    return nil
+  end
 
-# Get an instance of the S3 interface.
-s3 = AWS::S3.new
+  filename = ''
 
-# Upload a file.
-key = File.basename(file_name)
-s3.buckets[bucket_name].objects[key].write(:file => file_name)
-puts "Uploading file #{file_name} to bucket #{bucket_name}."
+  bucket.objects.each do |obj|
+    filename = obj.key
+    puts filename
+  end
+
+  return filename
+end
+
+def results_upload(bucket_name, local_file, results_file)
+
+  # Get an instance of the S3 interface.
+  s3 = AWS::S3.new
+  bucket = s3.buckets[bucket_name]
+
+  if !bucket.exists?
+    puts 'Bucket ' + bucket_name + ' does not exit!'
+    return false
+  end
+
+  # Upload a file.
+  #key = File.basename(results_file)
+  s3.buckets[bucket_name].objects[results_file].write(:file => local_file)
+  puts "Uploading file #{local_file} to #{results_file} in bucket #{bucket_name}."
+  return true
+end
