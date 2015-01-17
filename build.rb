@@ -42,7 +42,7 @@ def do_unlock(board)
   FileUtils.rm_rf(board)
 end
 
-def do_work (command)
+def do_work (command, error_message)
 
   Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
 
@@ -52,6 +52,7 @@ def do_work (command)
     exit_status = wait_thr.value
     unless exit_status.success?
       do_unlock($lf)
+      set_PR_Status $full_repo_name, $sha, 'failure', error_message
       abort "The command #{command} failed!"
     end
   end  
@@ -65,12 +66,12 @@ def do_clone (srcdir, branch, html_url)
         #git clone <url> --branch <branch> --single-branch [<folder>]
         #result = `git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch `
         #puts result
-        do_work "git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch"
+        do_work "git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch", "Cloning repo failed."
         Dir.chdir("Firmware") do
             #result = `git submodule init && git submodule update`
             #puts result
-            do_work "git submodule init"
-            do_work "git submodule update"
+            do_work "git submodule init", "GIT submodule init failed"
+            do_work "git submodule update", "GIT submodule init failed"
         end
     end
 end
@@ -78,17 +79,17 @@ end
 def do_master_merge (srcdir, base_repo, base_branch)
     puts "do_merge of #{base_repo}/#{base_branch}"
     Dir.chdir(srcdir + "/Firmware") do
-        do_work "git remote add base_repo #{base_repo}.git"
-        do_work "git fetch base_repo"
-        do_work "git merge base_repo/#{base_branch} -m 'Merged #{base_repo}/#{base_branch} into test branch'"
+        do_work "git remote add base_repo #{base_repo}.git", "GIT adding upstream failed"
+        do_work "git fetch base_repo", "GIT fetching upstream failed"
+        do_work "git merge base_repo/#{base_branch} -m 'Merged #{base_repo}/#{base_branch} into test branch'", "Failed merging #{base_repo}/#{base_branch}"
     end
 end
     
 def do_build (srcdir)
     puts "Starting build"
     Dir.chdir(srcdir+"/Firmware") do    
-        do_work  'BOARDS="px4fmu-v2 px4io-v2" make archives'
-        do_work  "make -j8 px4fmu-v2_test"
+        do_work  'BOARDS="px4fmu-v2 px4io-v2" make archives', "make archives failed"
+        do_work  "make -j8 px4fmu-v2_test", "make px4fmu-v2_test failed"
     end
 end    
 
@@ -121,6 +122,11 @@ if pid.nil? then
   FileUtils.rm_rf(srcdir)
 
   # In child
+
+  # Set relevant global variables for PR status
+  $full_repo_name = full_repo_name
+  $sha = sha
+
   do_clone srcdir, branch, url
   if !pr.nil?
     do_master_merge srcdir, pr['base']['repo']['html_url'], pr['base']['ref']
