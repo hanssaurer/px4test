@@ -10,8 +10,7 @@ puts "----------------- Hardware-Test running ----------------"
  
 
 #Other params
-#testcmd = "make upload px4fmu-v2_test"
-testcmd = "Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_test.px4"
+testcmd = "Tools/px_uploader.py --port \"/dev/serial/by-id/usb-3D_Robotics*,/dev/tty.usbmodem1\" Images/px4fmu-v2_test.px4"
 $srcdir = ENV['srcdir']
 $nshport = ENV['NSHPORT']
 $ACCESS_TOKEN = ENV['GITTOKEN']
@@ -145,8 +144,8 @@ sp = openserialport 100
 #Push enter to cause output of remnants
 sp.write "\n"
 input = sp.gets()
-puts "Remnants:"
-puts input
+#puts "Remnants:"
+#puts input
 sp.close
 
 Dir.chdir($srcdir+"/Firmware") do
