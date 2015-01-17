@@ -171,7 +171,7 @@ if pid.nil? then
   end
 
   # Logfile
-  results_upload($bucket_name, $commandlog, '%s/%s' % [s3_dirname, $commandlog])
+  results_upload($bucket_name, $commandlog, '%s/%s' % [s3_dirname, 'commandlog.txt'])
   FileUtils.rm_rf($commandlog)
   # GIF
   results_upload($bucket_name, 'animated.gif', '%s/%s' % [s3_dirname, 'animated.gif'])
