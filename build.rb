@@ -139,7 +139,7 @@ if pid.nil? then
 
   s3_dirname = results_claim_directory($bucket_name, $host)
 
-  $results_url = sprintf("http://%s/%s", $bucket_name, s3_dirname);
+  $results_url = sprintf("http://%s/%s/index.html", $bucket_name, s3_dirname);
 
   # Set relevant global variables for PR status
   $full_repo_name = full_repo_name
@@ -171,16 +171,16 @@ if pid.nil? then
   end
 
   # Logfile
-  results_upload($bucket_name, $commandlog, '%s/%' % [s3_dirname, $commandlog])
+  results_upload($bucket_name, $commandlog, '%s/%s' % [s3_dirname, $commandlog])
   FileUtils.rm_rf($commandlog)
   # GIF
-  results_upload($bucket_name, 'animated.gif', '%s/%' % [s3_dirname, 'animated.gif'])
+  results_upload($bucket_name, 'animated.gif', '%s/%s' % [s3_dirname, 'animated.gif'])
   FileUtils.rm_rf('animated.gif')
 
   File.open('index.html', 'w') {|f| f.write("<html><head><title>Test Result</title><body><h3>Test Result</h3><img src=\"animated.gif\"><br /><a href=\"commandlog.txt\">Build log</a></body></html>") }
 
   # Index page
-  results_upload($bucket_name, 'index.html', '%s/%' % [s3_dirname, 'index.html'])
+  results_upload($bucket_name, 'index.html', '%s/%s' % [s3_dirname, 'index.html'])
   FileUtils.rm_rf('index.html')
 
   # Clean up by deleting the work directory
