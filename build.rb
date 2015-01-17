@@ -127,18 +127,26 @@ if pid.nil? then
   $full_repo_name = full_repo_name
   $sha = sha
 
+  tgit_start = Time.now
   do_clone srcdir, branch, url
   if !pr.nil?
     do_master_merge srcdir, pr['base']['repo']['html_url'], pr['base']['ref']
   end
+  tgit_duration = Time.now - tgit_start
+  tbuild_start = Time.now
   do_build srcdir
+  tbuild_duration = Time.now - tbuild_start
+  thw_start = Time.now
   system 'ruby hwtest.rb'
   puts "HW TEST RESULT:" + $?.exitstatus.to_s
+  thw_duration = Time.now - thw_start
+
+  timingstr = sprintf("git: %4.2fs build: %4.2fs hw: %4.2fs", tgit_duration, tbuild_duration, thw_duration)
 
   if ($?.exitstatus == 0) then
-    set_PR_Status full_repo_name, sha, 'success', 'Hardware test on Pixhawk passed!'
+    set_PR_Status full_repo_name, sha, 'success', 'Pixhawk HW test passed: ' + timingstr
   else
-    set_PR_Status full_repo_name, sha, 'failure', 'Hardware test on Pixhawk FAILED!'
+    set_PR_Status full_repo_name, sha, 'failure', 'Pixhawk HW test FAILED: ' + timingstr
   end
 
   # Clean up by deleting the work directory
