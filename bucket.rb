@@ -37,5 +37,6 @@ def results_upload(bucket_name, local_file, results_file)
   #key = File.basename(results_file)
   s3.buckets[bucket_name].objects[results_file].write(:file => local_file)
   puts "Uploading file #{local_file} to #{results_file} in bucket #{bucket_name}."
+  puts "Link: http://#{bucket_name}/#{results_file}"
   return true
 end

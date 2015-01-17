@@ -19,7 +19,7 @@ class TestBucket < Test::Unit::TestCase
     # Write test file
     File.open(file_name, 'w') {|f| f.write(Time.now.strftime("%d/%m/%Y %H:%M")) }
 
-    upload_result = results_upload(bucket_name, file_name, claimed_dir)
+    upload_result = results_upload(bucket_name, file_name, "%s/%s" % [claimed_dir, file_name])
 
     # Cleanup
     FileUtils.rm_rf(file_name);
