@@ -1,8 +1,12 @@
 require 'sinatra'
 require 'json'
 require 'octokit'
-require 'open3'
+#require 'open3'
 require 'fileutils'
+require "serialport"
+$LOAD_PATH << '.'
+require 'ci_utils.rb'
+
 
 #You can write Visual-Basic in any language!
 
@@ -12,6 +16,7 @@ set :environment, :production
 set :server, :thin
 set :port, 4567
 
+$nshport = ENV['NSHPORT']
 $ACCESS_TOKEN = ENV['GITTOKEN']
 fork = ENV['PX4FORK']
 
@@ -57,10 +62,9 @@ def do_work (command, error_message)
       # Do not run through the standard exit handlers
       exit!(1)
     end
-  end  
-end  
+  end
+end
 
-    
 def do_clone (srcdir, branch, html_url)
     puts "do_clone: " + branch
     system 'mkdir', '-p', srcdir
@@ -95,6 +99,106 @@ def do_build (srcdir)
     end
 end    
 
+def openserialport (timeout)
+  #Open serial port - safe
+  #params for serial port
+
+  port_str = $nshport
+  baud_rate = 57600
+  data_bits = 8
+  stop_bits = 1
+  parity = SerialPort::NONE
+
+  begin
+    sp = SerialPort.new(port_str, baud_rate, data_bits, stop_bits, parity)
+    sp.read_timeout = timeout
+    return sp
+  rescue Errno::ENOENT
+    puts "Serial port not available! Please (re)connect!"
+    sleep(1)
+    retry
+  end 
+end
+
+
+def make_hwtest (pr, srcdir, branch, url, full_repo_name, sha)
+# Execute hardware test
+
+#testcmd = "make upload px4fmu-v2_test"
+testcmd = "Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_test.px4"
+
+  #some variables need to be initialized
+  testResult = ""
+  finished = false
+
+  puts "----------------- Hardware-Test running ----------------"
+  sp = openserialport 100
+
+  #Push enter to cause output of remnants
+  sp.write "\n"
+  input = sp.gets()
+  puts "Remnants:"
+  puts input
+  sp.close
+
+  Dir.chdir(srcdir+"/Firmware") do
+    #puts "Call: " + testcmd
+    #result = `#{testcmd}`
+    puts "---------------command output---------------"
+    do_work testcmd  
+    puts "---------- end of command output------------"
+  end
+
+  sp = openserialport 5000
+  sleep(5)
+
+  test_passed = false
+
+  begin
+    begin
+      input = sp.gets()
+    rescue Errno::ENXIO  
+      puts "Serial port not available! Please connect"
+      sleep(1)
+      sp = openserialport 5000
+      retry
+    end
+    if !input.nil?
+    #if input != nil and !input.empty?
+      testResult = testResult + input
+      if testResult.include? "NuttShell"
+        finished = true
+        puts "---------------- Testresult----------------"
+        #puts testResult
+        if testResult.include? "TEST FAILED"
+          puts "TEST FAILED!"
+          test_passed = false
+          make_mmail testResult, test_passed, pr, srcdir, branch, url, full_repo_name, sha
+          #sendTestResult testResult, test_passed
+        else
+          test_passed = true
+          puts "Test successful!"
+          make_mmail testResult, test_passed, pr, srcdir, branch, url, full_repo_name, sha
+        end  
+      end  
+    else
+      finished = true
+      puts "No input from serial port"
+    end  
+  end until finished
+
+  sp.close
+
+  # Provide exit status
+  if (test_passed)
+    return 0
+  else
+    return 1
+  end
+
+end
+
+
 def set_PR_Status (repo, sha, prstatus, description)
 
   puts "Access token: " + $ACCESS_TOKEN
@@ -119,7 +223,6 @@ if pid.nil? then
 
   # Lock this board for operations
   do_lock($lf)
-
   # Clean up any mess left behind by a previous potential fail
   FileUtils.rm_rf(srcdir)
 
@@ -139,21 +242,19 @@ if pid.nil? then
   do_build srcdir
   tbuild_duration = Time.now - tbuild_start
   thw_start = Time.now
-  system 'ruby hwtest.rb'
-  puts "HW TEST RESULT:" + $?.exitstatus.to_s
+
+  # Run the hardware test
+  result = make_hwtest pr, srcdir, branch, url, full_repo_name, sha
   thw_duration = Time.now - thw_start
-
-  timingstr = sprintf("git: %4.2fs build: %4.2fs hw: %4.2fs", tgit_duration, tbuild_duration, thw_duration)
-
-  if ($?.exitstatus == 0) then
+  timingstr = sprintf("%4.2fs", tgit_duration + tbuild_duration + thw_duration)
+  puts "HW TEST RESULT:" + result.to_s
+  if (result == 0) then
     set_PR_Status full_repo_name, sha, 'success', 'Pixhawk HW test passed: ' + timingstr
   else
     set_PR_Status full_repo_name, sha, 'failure', 'Pixhawk HW test FAILED: ' + timingstr
   end
-
   # Clean up by deleting the work directory
   FileUtils.rm_rf(srcdir)
-
   # Unlock this board
   do_unlock($lf)
 
@@ -164,18 +265,6 @@ else
 end
 
 end    
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # ---------- Routing ------------
@@ -193,6 +282,7 @@ post '/payload' do
   when 'ping'
         "Hello"    
   when 'pull_request'
+begin
     pr = body["pull_request"]
     number = body['number']
     puts pr['state']
@@ -201,7 +291,7 @@ post '/payload' do
       sha = pr['head']['sha']
       srcdir = sha
       full_name = pr['base']['repo']['full_name']
-      ENV['srcdir'] = srcdir
+      #ENV['srcdir'] = srcdir
       puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
       ENV['pushername'] = body['sender']['user']
@@ -215,13 +305,15 @@ post '/payload' do
     else
       puts 'Ignoring closing of pull request #' + String(number)
     end
+end
+puts "Pull Request"    
   when 'push'
     branch = body['ref']
 
     if !(body['head_commit'].nil?) && body['head_commit'] != 'null'
       sha = body['head_commit']['id']
       srcdir = sha
-      ENV['srcdir'] = srcdir
+      #ENV['srcdir'] = srcdir
       puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
       ENV['pushername'] = body ['pusher']['name']
