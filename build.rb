@@ -206,7 +206,6 @@ if pid.nil? then
 
   # Lock this board for operations
   do_lock($lf)
-=begin
   # Clean up any mess left behind by a previous potential fail
   FileUtils.rm_rf(srcdir)
 
@@ -217,24 +216,18 @@ if pid.nil? then
     do_master_merge srcdir, pr['base']['repo']['html_url'], pr['base']['ref']
   end
   do_build srcdir
-=end
   #system 'ruby hwtest.rb'
   #puts "HW TEST RESULT:" + $?.exitstatus.to_s
   result = make_hwtest pr, srcdir, branch, url, full_repo_name, sha
   puts "HW TEST RESULT:" + result.to_s
-=begin
   #if ($?.exitstatus == 0) then
   if (result == 0) then
     set_PR_Status full_repo_name, sha, 'success', 'Hardware test on Pixhawk passed!'
   else
     set_PR_Status full_repo_name, sha, 'failure', 'Hardware test on Pixhawk FAILED!'
   end
-=end
-#!!!!! to be removed
-=begin
   # Clean up by deleting the work directory
   FileUtils.rm_rf(srcdir)
-=end
   # Unlock this board
   do_unlock($lf)
 
@@ -303,7 +296,7 @@ puts "Pull Request"
       puts "Adding to queue: Branch: " + branch + " from "+ body['repository']['html_url']
       full_name = body['repository']['full_name']
       puts "Full name: " + full_name
-      #set_PR_Status full_name, sha, 'pending', 'Running test on Pixhawk hardware..'
+      set_PR_Status full_name, sha, 'pending', 'Running test on Pixhawk hardware..'
       fork_hwtest nil, srcdir, branch, body['repository']['html_url'], full_name, sha
       'Push event queued for testing.'
     end

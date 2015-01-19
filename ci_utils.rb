@@ -21,10 +21,11 @@ def do_work (command)
   end  
 end  
 
-
+=begin
 def wrap(s, width=78)
   s.gsub(/(.{1,#{width}})(\s+|\Z)/, "\\1\n")
 end
+=end
 
 def split_str(str, len = 40)
 #from: www.ruby-forum.com/topic/87492
