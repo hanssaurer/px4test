@@ -8,7 +8,8 @@ $LOAD_PATH << '.'
 require 'ci_utils.rb'
 
 
-#You can write Visual-Basic in any language!
+require_relative "bucket"
+require_relative "cam"
 
 set :bind, '0.0.0.0'
 set :environment, :production
@@ -18,7 +19,11 @@ set :port, 4567
 
 $nshport = ENV['NSHPORT']
 $ACCESS_TOKEN = ENV['GITTOKEN']
-fork = ENV['PX4FORK']
+$commandlog = '/home/drone/commandlog.txt';
+$consolelog = '/home/drone/consolelog.txt';
+$bucket_name = 'results.dronetest.io'
+$host = 'zurich01'
+$results_url = ""
 
 $lf = '.lockfile'
 
@@ -51,14 +56,20 @@ def do_work (command, error_message)
 
   Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
 
+  logfile = File.open($commandlog, 'a')
+
     while line = stdout_err.gets
       puts "OUT> " + line
+      logfile << line
     end
     exit_status = wait_thr.value
     unless exit_status.success?
       do_unlock($lf)
       set_PR_Status $full_repo_name, $sha, 'failure', error_message
-      puts "The command #{command} failed!"
+      failmsg = "The command #{command} failed!"
+      puts failmsg
+      logfile << failmsg
+      logfile.close
       # Do not run through the standard exit handlers
       exit!(1)
     end
@@ -206,7 +217,7 @@ def set_PR_Status (repo, sha, prstatus, description)
   # XXX replace the URL below with the web server status details URL
   options = {
     "state" => prstatus,
-    "target_url" => "http://px4.io/dev/unit_tests",
+    "target_url" => $results_url,
     "description" => description,
     "context" => "continuous-integration/hans-ci"
   };
@@ -225,8 +236,13 @@ if pid.nil? then
   do_lock($lf)
   # Clean up any mess left behind by a previous potential fail
   FileUtils.rm_rf(srcdir)
+  FileUtils.touch($consolelog)
 
   # In child
+
+  s3_dirname = results_claim_directory($bucket_name, $host)
+
+  $results_url = sprintf("http://%s/%s/index.html", $bucket_name, s3_dirname);
 
   # Set relevant global variables for PR status
   $full_repo_name = full_repo_name
@@ -246,6 +262,10 @@ if pid.nil? then
   # Run the hardware test
   result = make_hwtest pr, srcdir, branch, url, full_repo_name, sha
   thw_duration = Time.now - thw_start
+
+  # Take webcam image
+  take_picture(".")
+
   timingstr = sprintf("%4.2fs", tgit_duration + tbuild_duration + thw_duration)
   puts "HW TEST RESULT:" + result.to_s
   if (result == 0) then
@@ -253,6 +273,22 @@ if pid.nil? then
   else
     set_PR_Status full_repo_name, sha, 'failure', 'Pixhawk HW test FAILED: ' + timingstr
   end
+
+  # Logfile
+  results_upload($bucket_name, $commandlog, '%s/%s' % [s3_dirname, 'commandlog.txt'])
+  FileUtils.rm_rf($commandlog)
+  results_upload($bucket_name, $consolelog, '%s/%s' % [s3_dirname, 'consolelog.txt'])
+  FileUtils.rm_rf($consolelog)
+  # GIF
+  results_upload($bucket_name, 'animated.gif', '%s/%s' % [s3_dirname, 'animated.gif'])
+  FileUtils.rm_rf('animated.gif')
+
+  File.open('index.html', 'w') {|f| f.write("<html><head><title>Test Result</title><body><h3>Test Result</h3><img src=\"animated.gif\"><br /><a href=\"commandlog.txt\">Build log</a><br /><a href=\"consolelog.txt\">NSH console log</a></body></html>") }
+
+  # Index page
+  results_upload($bucket_name, 'index.html', '%s/%s' % [s3_dirname, 'index.html'])
+  FileUtils.rm_rf('index.html')
+
   # Clean up by deleting the work directory
   FileUtils.rm_rf(srcdir)
   # Unlock this board
