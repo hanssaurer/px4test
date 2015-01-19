@@ -104,7 +104,7 @@ def openserialport (timeout)
 end
 
 
-def make_hwtest (srcdir)
+def make_hwtest (pr, srcdir, branch, url, full_repo_name, sha)
 # Execute hardware test
 
 #testcmd = "make upload px4fmu-v2_test"
@@ -156,12 +156,12 @@ testcmd = "Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_test.
         if testResult.include? "TEST FAILED"
           puts "TEST FAILED!"
           test_passed = false
-          make_mmail testResult, test_passed
+          make_mmail testResult, test_passed, pr, srcdir, branch, url, full_repo_name, sha
           #sendTestResult testResult, test_passed
         else
           test_passed = true
           puts "Test successful!"
-          make_mmail testResult, test_passed
+          make_mmail testResult, test_passed, pr, srcdir, branch, url, full_repo_name, sha
         end  
       end  
     else
@@ -198,7 +198,7 @@ def set_PR_Status (repo, sha, prstatus, description)
   puts res
 end    
 
-def fork_hwtest (pr, srcdir, branch, url, full_repo_name, sha, old_pid)
+def fork_hwtest (pr, srcdir, branch, url, full_repo_name, sha)
 #Starts the hardware test in a subshell
 
 pid = Process.fork
@@ -209,7 +209,7 @@ if pid.nil? then
 =begin
   # Clean up any mess left behind by a previous potential fail
   FileUtils.rm_rf(srcdir)
-=end
+
   # In child
 
   do_clone srcdir, branch, url
@@ -217,19 +217,19 @@ if pid.nil? then
     do_master_merge srcdir, pr['base']['repo']['html_url'], pr['base']['ref']
   end
   do_build srcdir
-
+=end
   #system 'ruby hwtest.rb'
   #puts "HW TEST RESULT:" + $?.exitstatus.to_s
-  result = make_hwtest srcdir
+  result = make_hwtest pr, srcdir, branch, url, full_repo_name, sha
   puts "HW TEST RESULT:" + result.to_s
-
+=begin
   #if ($?.exitstatus == 0) then
   if (result == 0) then
     set_PR_Status full_repo_name, sha, 'success', 'Hardware test on Pixhawk passed!'
   else
     set_PR_Status full_repo_name, sha, 'failure', 'Hardware test on Pixhawk FAILED!'
   end
-
+=end
 #!!!!! to be removed
 =begin
   # Clean up by deleting the work directory
@@ -304,7 +304,7 @@ puts "Pull Request"
       full_name = body['repository']['full_name']
       puts "Full name: " + full_name
       #set_PR_Status full_name, sha, 'pending', 'Running test on Pixhawk hardware..'
-      fork_hwtest nil, srcdir, branch, body['repository']['html_url'], full_name, sha, pid
+      fork_hwtest nil, srcdir, branch, body['repository']['html_url'], full_name, sha
       'Push event queued for testing.'
     end
   when 'status'
