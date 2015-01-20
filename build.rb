@@ -179,7 +179,6 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
       testResult = testResult + input
       if testResult.include? "NuttShell"
         finished = true
-        sp.close
         puts "---------------- Testresult----------------"
         #puts testResult
         if testResult.include? "TEST FAILED"
@@ -194,10 +193,11 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
       end  
     else
       finished = true
-      sp.close
       puts "No input from serial port"
     end  
   end until finished
+
+  sp.close
 
   # Provide exit status
   if (test_passed)
