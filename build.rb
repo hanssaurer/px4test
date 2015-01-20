@@ -33,7 +33,7 @@ def do_lock(board)
   while File.file?(board)
     # Check if the lock file is really old, if yes, take our chances and wipe it
     if ((Time.now - File.stat(board).mtime).to_i > (60 * 10)) then
-      unlock('boardname')
+      do_unlock('boardname')
       break
     end
 
