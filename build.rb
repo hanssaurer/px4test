@@ -297,6 +297,7 @@ if pid.nil? then
   FileUtils.rm_rf(srcdir)
   # Unlock this board
   do_unlock($lf)
+  exit! 0
 
 else
   # In parent
