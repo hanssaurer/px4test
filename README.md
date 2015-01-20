@@ -31,7 +31,7 @@ sudo apt-get install libopencv-highgui-dev ruby-rmagick
 Install the Ruby dependencies using gem:
 
 ```
-sudo gem install serialport sinatra json octokit thin specific_install aws-sdk
+sudo gem install mail serialport sinatra json octokit thin specific_install aws-sdk
 ```
 
 Install our custom rb_webcam gem and rmagick

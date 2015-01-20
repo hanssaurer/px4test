@@ -184,12 +184,11 @@ def make_hwtest (pr, srcdir, branch, url, full_repo_name, sha)
         if testResult.include? "TEST FAILED"
           puts "TEST FAILED!"
           test_passed = false
-          make_mmail testResult, test_passed, pr, srcdir, branch, url, full_repo_name, sha
-          #sendTestResult testResult, test_passed
+          make_mmail testResult, test_passed, srcdir, branch, url, full_repo_name, sha
         else
           test_passed = true
           puts "Test successful!"
-          make_mmail testResult, test_passed, pr, srcdir, branch, url, full_repo_name, sha
+          make_mmail testResult, test_passed, srcdir, branch, url, full_repo_name, sha
         end  
       end  
     else

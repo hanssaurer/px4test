@@ -22,7 +22,7 @@ def split_str(str, len = 40)
 end
 
 
-def make_mmail (detailed_results, success, pr, srcdir, branch, url, full_repo_name, sha)
+def make_mmail (detailed_results, success, srcdir, branch, url, full_repo_name, sha)
 #Create Confirmation email
 
 puts "Feedback email from ci_utils via mmail:"
@@ -59,7 +59,11 @@ mail = Mail.new do
   #add_file :filename => 'TestResult.txt', :content => attachment
 end
 
-mail.deliver!
+  # Deliver email via sendmail, as default (SMTP)
+  # requires valid SSL certificates for localhost
+  mail.delivery_method :sendmail
+
+  mail.deliver!
 
   #puts mail.to_s
   #return message
