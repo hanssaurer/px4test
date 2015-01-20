@@ -181,6 +181,10 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
         finished = true
         puts "---------------- Testresult----------------"
         #puts testResult
+
+        # Write test results to console log file
+        File.open($consolelog, 'w') {|f| f.write(testResult) }
+
         if testResult.include? "TEST FAILED"
           puts "TEST FAILED!"
           test_passed = false
