@@ -22,19 +22,22 @@ def split_str(str, len = 40)
 end
 
 
-def make_mmail (detailed_results, success, srcdir, branch, url, full_repo_name, sha)
+def make_mmail (contributor, email, sender, detailed_results, success, srcdir, branch, url, full_repo_name, sha, results_link)
 #Create Confirmation email
 
 puts "Feedback email from ci_utils via mmail:"
   # Set up template data.
-  sender = ENV['MAILSENDER']
-  contributor = ENV['pushername']
-  email = ENV['pusheremail']
   cc1 = 'hans.saurer@t-online.de'
   cc2 = 'lm@qgroundcontrol.org'
 
   detailed_results = split_str(detailed_results,80)
   puts detailed_results
+  if success
+    one_line_feedback = 'The test succeeded'
+  else
+    one_line_feedback = 'The test failed'
+  end
+
   s = File.read('mailtext.erb')
   serb = ERB.new s
   styles = YAML.load_file('styles.yml')
@@ -49,7 +52,9 @@ mail = Mail.new do
   from     "PX4 Hardware Test  <#{sender}>"
   to       "#{contributor} <#{email}>"
   cc       cc1
-  subject  'On-hardware test result for PX4/Firmware'
+  subject  "On-hardware test for #{branch} on #{full_repo_name} (#{sha})"
+
+  puts "Sender: " + from.to_s
   
   html_part do
     content_type 'text/html; charset=UTF-8'

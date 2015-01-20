@@ -1,6 +1,7 @@
-  table:		padding:0px;border:1px solid;border-radius:5px;width:100%;color:#606060;border-color:#606060;font-size:20px;margin-bottom:15px;margin-top:15px;
-  tablered:		background-color:#ff8888;padding:0px;border:1px solid;border-radius:5px;width:100%;color:#ff2222;border-color:#606060;font-size:20px;margin-bottom:15px;margin-top:15px;
+  table:		padding:10px;border:1px solid;border-radius:5px;width:100%;color:#606060;border-color:#606060;font-size:20px;margin-bottom:15px;margin-top:15px;
+  tablered:		background-color:#ffAAAA;padding:10px;border:1px solid;border-radius:5px;width:100%;color:#CC1111;border-color:#606060;font-size:20px;margin-bottom:15px;margin-top:15px;
+  tablegreen:   background-color:#AAFFAA;padding:10px;border:1px solid;border-radius:5px;width:100%;color:#11CC11;border-color:#606060;font-size:20px;margin-bottom:15px;margin-top:15px;
   tr:			padding:0px;border:0px;
-  td:			padding:0px;border:0px;vertical-align:middle;
-  span:			vertical-align:middle;margin-left:3px;
-  spansmall:	vertical-align:middle;margin-left:3px;font-size:16px;
+  td:			padding:0px;border:0px;vertical-align:middle;align:left;
+  span:			vertical-align:middle;margin-left:3px;align:left;
+  spansmall:	vertical-align:middle;margin-left:3px;font-size:16px;align:left;

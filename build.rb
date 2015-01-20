@@ -133,9 +133,9 @@ def openserialport (timeout)
 end
 
 
-def make_hwtest (pr, srcdir, branch, url, full_repo_name, sha)
+def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, results_link)
   # Execute hardware test
-
+  sender = ENV['MAILSENDER']
   testcmd = "Tools/px_uploader.py --port \"/dev/serial/by-id/usb-3D_Robotics*,/dev/tty.usbmodem1\" Images/px4fmu-v2_test.px4"
 
   #some variables need to be initialized
@@ -179,25 +179,25 @@ def make_hwtest (pr, srcdir, branch, url, full_repo_name, sha)
       testResult = testResult + input
       if testResult.include? "NuttShell"
         finished = true
+        sp.close
         puts "---------------- Testresult----------------"
         #puts testResult
         if testResult.include? "TEST FAILED"
           puts "TEST FAILED!"
           test_passed = false
-          make_mmail testResult, test_passed, srcdir, branch, url, full_repo_name, sha
+          make_mmail pushername, pusheremail, sender, testResult, test_passed, srcdir, branch, url, full_repo_name, sha, results_link
         else
           test_passed = true
           puts "Test successful!"
-          make_mmail testResult, test_passed, srcdir, branch, url, full_repo_name, sha
+          make_mmail pushername, pusheremail, sender, testResult, test_passed, srcdir, branch, url, full_repo_name, sha, results_link
         end  
       end  
     else
       finished = true
+      sp.close
       puts "No input from serial port"
     end  
   end until finished
-
-  sp.close
 
   # Provide exit status
   if (test_passed)
@@ -225,7 +225,7 @@ def set_PR_Status (repo, sha, prstatus, description)
   puts res
 end    
 
-def fork_hwtest (pr, srcdir, branch, url, full_repo_name, sha)
+def fork_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha)
 #Starts the hardware test in a subshell
 
 pid = Process.fork
@@ -259,7 +259,7 @@ if pid.nil? then
   thw_start = Time.now
 
   # Run the hardware test
-  result = make_hwtest pr, srcdir, branch, url, full_repo_name, sha
+  result = make_hwtest pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, $results_url
   thw_duration = Time.now - thw_start
 
   # Take webcam image
@@ -329,13 +329,13 @@ begin
       #ENV['srcdir'] = srcdir
       puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
-      ENV['pushername'] = body['sender']['user']
-      ENV['pusheremail'] = "lorenz@px4.io"
+      pushername = body['sender']['user']
+      pusheremail = "lorenz@px4.io"
       branch = pr['head']['ref']
       url = pr['head']['repo']['html_url']
       puts "Adding to queue: Pull request: #{number} " + branch + " from "+ url
       set_PR_Status full_name, sha, 'pending', 'Running test on Pixhawk hardware..'
-      fork_hwtest pr, srcdir, branch, url, full_name, sha
+      fork_hwtest pushername, pusheremail, pr, srcdir, branch, url, full_name, sha
       'Pull request event queued for testing.'
     else
       puts 'Ignoring closing of pull request #' + String(number)
@@ -351,15 +351,15 @@ puts "Pull Request"
       #ENV['srcdir'] = srcdir
       puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
-      ENV['pushername'] = body ['pusher']['name']
-      ENV['pusheremail'] = body ['pusher']['email']
+      pushername = body ['pusher']['name']
+      pusheremail = body ['pusher']['email']
       a = branch.split('/')
       branch = a[a.count-1]           #last part is the bare branchname
       puts "Adding to queue: Branch: " + branch + " from "+ body['repository']['html_url']
       full_name = body['repository']['full_name']
       puts "Full name: " + full_name
       set_PR_Status full_name, sha, 'pending', 'Running test on Pixhawk hardware..'
-      fork_hwtest nil, srcdir, branch, body['repository']['html_url'], full_name, sha
+      fork_hwtest pushername, pusheremail, nil, srcdir, branch, body['repository']['html_url'], full_name, sha
       'Push event queued for testing.'
     end
   when 'status'
