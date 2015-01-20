@@ -156,7 +156,7 @@ testcmd = "Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_test.
     #puts "Call: " + testcmd
     #result = `#{testcmd}`
     puts "---------------command output---------------"
-    do_work testcmd  
+    do_work testcmd, "Firmware upload failed"  
     puts "---------- end of command output------------"
   end
 
