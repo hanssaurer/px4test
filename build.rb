@@ -133,10 +133,9 @@ end
 
 
 def make_hwtest (pr, srcdir, branch, url, full_repo_name, sha)
-# Execute hardware test
+  # Execute hardware test
 
-#testcmd = "make upload px4fmu-v2_test"
-testcmd = "Tools/px_uploader.py --port /dev/tty.usbmodem1 Images/px4fmu-v2_test.px4"
+  testcmd = "Tools/px_uploader.py --port \"/dev/serial/by-id/usb-3D_Robotics*,/dev/tty.usbmodem1\" Images/px4fmu-v2_test.px4"
 
   #some variables need to be initialized
   testResult = ""
