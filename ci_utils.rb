@@ -27,8 +27,8 @@ def make_mmail (contributor, email, sender, detailed_results, success, srcdir, b
 
 puts "Feedback email from ci_utils via mmail:"
   # Set up template data.
-  cc1 = 'hans.saurer@t-online.de'
-  cc2 = 'lm@qgroundcontrol.org'
+  cc1 = 'Hans Saurer <hans@px4.io>'
+  cc2 = 'Lorenz Meier <lorenz@px4.io>'
 
   detailed_results = split_str(detailed_results,80)
   puts detailed_results
@@ -51,7 +51,7 @@ puts "Feedback email from ci_utils via mmail:"
 mail = Mail.new do
   from     "PX4 Hardware Test  <#{sender}>"
   to       "#{contributor} <#{email}>"
-  cc       cc1 cc2
+  cc       cc1 + "," + cc2
   subject  "On-hardware test for #{branch} on #{full_repo_name} (#{sha})"
 
   puts "Sender: " + from.to_s

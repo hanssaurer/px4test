@@ -15,6 +15,15 @@
         </td>
       </tr>
     </table>
+    <table background="" style="<%= if success; styles['tablegreen']; else; styles['tablered']; end %>">
+      <tr style="<%= styles['tr'] %>">
+        <td style="<%= styles['td'] %>">
+           <span style="<%= styles['span'] %>">
+             <strong><%= one_line_feedback %></strong>
+           </span>
+        </td>
+      </tr>
+    </table>
     <table background="" style="<%= styles['table'] %>">
       <tr style="<%= styles['tr'] %>">
         <td style="<%= styles['td'] %>text-align:center;">
@@ -40,15 +49,6 @@
         <td style="<%= styles['td'] %>">
            <span style="<%= styles['spansmall'] %>">
              Full results: <a href="<%= results_link %>">Test results for commit <%= sha %></a>
-           </span>
-        </td>
-      </tr>
-    </table>
-    <table background="" style="<%= if success; styles['tablegreen']; else; styles['tablered']; end %>">
-      <tr style="<%= styles['tr'] %>">
-        <td style="<%= styles['td'] %>">
-           <span style="<%= styles['span'] %>">
-             <strong><%= one_line_feedback %></strong>
            </span>
         </td>
       </tr>
