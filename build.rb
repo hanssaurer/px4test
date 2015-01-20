@@ -122,6 +122,7 @@ def openserialport (timeout)
 
   begin
     sp = SerialPort.new(port_str, baud_rate, data_bits, stop_bits, parity)
+    puts "Opening port: " + port_str
     sp.read_timeout = timeout
     return sp
   rescue Errno::ENOENT
