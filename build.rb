@@ -188,12 +188,13 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
         if testResult.include? "TEST FAILED"
           puts "TEST FAILED!"
           test_passed = false
-          make_mmail pushername, pusheremail, sender, testResult, test_passed, srcdir, branch, url, full_repo_name, sha, results_link
         else
           test_passed = true
           puts "Test successful!"
-          make_mmail pushername, pusheremail, sender, testResult, test_passed, srcdir, branch, url, full_repo_name, sha, results_link
-        end  
+        end
+
+        # Send out email
+        make_mmail pushername, pusheremail, sender, testResult, test_passed, srcdir, branch, url, full_repo_name, sha, results_link
       end  
     else
       finished = true
