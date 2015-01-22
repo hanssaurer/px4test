@@ -193,14 +193,16 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
           puts "Test successful!"
         end
 
-        # Send out email
-        make_mmail pushername, pusheremail, sender, testResult, test_passed, srcdir, branch, url, full_repo_name, sha, results_link
       end  
     else
       finished = true
+      File.open($consolelog, 'w') {|f| f.write("NO SERIAL DATA RECEIVED!\n") }
       puts "No input from serial port"
     end  
   end until finished
+  
+  # Send out email
+  make_mmail pushername, pusheremail, sender, testResult, test_passed, srcdir, branch, url, full_repo_name, sha, results_link
 
   sp.close
 
