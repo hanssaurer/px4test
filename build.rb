@@ -133,7 +133,7 @@ def openserialport (timeout)
 end
 
 
-def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, results_link)
+def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, results_link, results_image_link)
   # Execute hardware test
   sender = ENV['MAILSENDER']
   testcmd = "Tools/px_uploader.py --port \"/dev/serial/by-id/usb-3D_Robotics*,/dev/tty.usbmodem1\" Images/px4fmu-v2_test.px4"
@@ -202,7 +202,7 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
   end until finished
   
   # Send out email
-  make_mmail pushername, pusheremail, sender, testResult, test_passed, srcdir, branch, url, full_repo_name, sha, results_link
+  make_mmail pushername, pusheremail, sender, testResult, test_passed, srcdir, branch, url, full_repo_name, sha, results_link, results_image_link
 
   sp.close
 
@@ -249,6 +249,7 @@ if pid.nil? then
   s3_dirname = results_claim_directory($bucket_name, $host)
 
   $results_url = sprintf("http://%s/%s/index.html", $bucket_name, s3_dirname);
+  results_still = sprintf("http://%s/%s/still.jpg", $bucket_name, s3_dirname);
 
   # Set relevant global variables for PR status
   $full_repo_name = full_repo_name
@@ -266,7 +267,7 @@ if pid.nil? then
   thw_start = Time.now
 
   # Run the hardware test
-  result = make_hwtest pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, $results_url
+  result = make_hwtest pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, $results_url, results_still
   thw_duration = Time.now - thw_start
 
   # Take webcam image

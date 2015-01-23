@@ -22,7 +22,7 @@ def split_str(str, len = 40)
 end
 
 
-def make_mmail (contributor, email, sender, detailed_results, success, srcdir, branch, url, full_repo_name, sha, results_link)
+def make_mmail (contributor, email, sender, detailed_results, success, srcdir, branch, url, full_repo_name, sha, results_link, still_image_link)
 #Create Confirmation email
 
 puts "Feedback email from ci_utils via mmail:"
