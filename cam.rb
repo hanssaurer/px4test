@@ -13,12 +13,14 @@ def take_picture(workingdir)
     image = capture.grab
     image.save "%s/new_image%d.jpg" % [workingdir, i]
   end
+  image = capture.grab
+  image.save "%s/still.jpg" % [workingdir]
   capture.close
 
   # Create a GIF using these frames
-  animation = ImageList.new(*Dir["*.jpg"])
+  animation = ImageList.new(*Dir["new_image*.jpg"])
   animation.delay = 20
   animation.write("%s/animated.gif" % workingdir)
-  FileUtils.rm_rf(Dir.glob("%s/*.jpg" % workingdir))
+  FileUtils.rm_rf(Dir.glob("%s/new_image*.jpg" % workingdir))
   return true
 end

@@ -287,7 +287,10 @@ if pid.nil? then
   FileUtils.rm_rf($consolelog)
   # GIF
   results_upload($bucket_name, 'animated.gif', '%s/%s' % [s3_dirname, 'animated.gif'])
+  # Still JPEG
+  results_upload($bucket_name, 'still.jpg', '%s/%s' % [s3_dirname, 'still.jpg'])
   FileUtils.rm_rf('animated.gif')
+  FileUtils.rm_rf('still.jpg')
 
   File.open('index.html', 'w') {|f| f.write("<html><head><title>Test Result</title><body><h3>Test Result</h3><img src=\"animated.gif\"><br /><a href=\"commandlog.txt\">Build log</a><br /><a href=\"consolelog.txt\">NSH console log</a></body></html>") }
 
