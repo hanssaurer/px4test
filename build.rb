@@ -341,8 +341,12 @@ begin
       #ENV['srcdir'] = srcdir
       puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
-      pushername = body['sender']['user']
-      pusheremail = "lorenz@px4.io"
+
+      # Pull last commiter email for PR from GH
+      client = Octokit::Client.new(:access_token => $ACCESS_TOKEN)
+      commit = client.commit(full_name, sha)
+      pushername = commit['commit']['author']['name']
+      pusheremail = commit['commit']['author']['email']
       branch = pr['head']['ref']
       url = pr['head']['repo']['html_url']
       puts "Adding to queue: Pull request: #{number} " + branch + " from "+ url
