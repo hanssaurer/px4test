@@ -21,11 +21,34 @@ def split_str(str, len = 40)
   }.join
 end
 
+def generate_results_page (htmlfilename, contributor, email, sender, detailed_results, success, srcdir, branch, url, full_repo_name, sha, results_link, still_image_link)
+  # Generate results page
+
+  detailed_results = split_str(detailed_results,80)
+  puts detailed_results
+  if success
+    one_line_feedback = 'The test succeeded'
+  else
+    one_line_feedback = 'The test failed'
+  end
+
+  commandlog = 'commandlog.txt'
+  consolelog = 'consolelog.txt'
+
+  s = File.read('results_page_text.erb')
+  serb = ERB.new s
+  styles = YAML.load_file('styles.yml')
+  # Produce result
+  s = serb.result(binding)
+
+  # Save HTML document
+  File.open(htmlfilename, 'w') {|f| f.write(s) }
+end
 
 def make_mmail (contributor, email, sender, detailed_results, success, srcdir, branch, url, full_repo_name, sha, results_link, still_image_link)
-#Create Confirmation email
+  # Create Confirmation email
 
-puts "Feedback email from ci_utils via mmail:"
+  puts "Feedback email from ci_utils via mmail:"
   # Set up template data.
   cc1 = 'Hans Saurer <hans@px4.io>'
   cc2 = 'Lorenz Meier <lorenz@px4.io>'
@@ -45,33 +68,29 @@ puts "Feedback email from ci_utils via mmail:"
   s = serb.result(binding)
 
   s = Mail::Encodings::QuotedPrintable::encode(s)
-  puts "Encoded: #{s}"
+  # debug output puts "Encoded: #{s}"
 
+  mail = Mail.new do
+    from     "PX4 Hardware Test  <#{sender}>"
+    to       "#{contributor} <#{email}>"
+    cc       cc1 + "," + cc2
+    subject  "On-hardware test for #{branch} on #{full_repo_name} (#{sha})"
 
-mail = Mail.new do
-  from     "PX4 Hardware Test  <#{sender}>"
-  to       "#{contributor} <#{email}>"
-  cc       cc1 + "," + cc2
-  subject  "On-hardware test for #{branch} on #{full_repo_name} (#{sha})"
-
-  puts "Sender: " + from.to_s
-  
-  html_part do
-    content_type 'text/html; charset=UTF-8'
-    content_transfer_encoding 'quoted-printable'
-    body  s
+    puts "Sender: " + from.to_s
+    
+    html_part do
+      content_type 'text/html; charset=UTF-8'
+      content_transfer_encoding 'quoted-printable'
+      body  s
+    end
+    #add_file :filename => 'TestResult.txt', :content => attachment
   end
-  #add_file :filename => 'TestResult.txt', :content => attachment
-end
 
   # Deliver email via sendmail, as default (SMTP)
   # requires valid SSL certificates for localhost
   mail.delivery_method :sendmail
 
   mail.deliver!
-
-  #puts mail.to_s
-  #return message
 end
 
 

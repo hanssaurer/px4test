@@ -2,7 +2,7 @@
 require_relative "../ci_utils"
 require "test/unit"
 
-class TestBucket < Test::Unit::TestCase
+class TestMail < Test::Unit::TestCase
  
   def test_mail
 

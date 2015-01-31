@@ -7,3 +7,7 @@ tstsub.rb
 .subl*
 .hans.yml
 animated.gif
+Hans-CI.sublime-workspace
+index.html
+index_err.html
+index_ok.html
