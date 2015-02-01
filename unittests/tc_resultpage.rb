@@ -8,7 +8,7 @@ class TestResultsPage < Test::Unit::TestCase
 
     puts("\n")
 
-    puts("Creating index.html")
+    puts("Creating index_ok.html and index_err.html in local directory.")
 
     srcdir = "abcd"
     branch = "master"
