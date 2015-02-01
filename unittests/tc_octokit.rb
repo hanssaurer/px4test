@@ -2,7 +2,7 @@
 require 'octokit'
 require "test/unit"
 
-class TestBucket < Test::Unit::TestCase
+class TestOctokit < Test::Unit::TestCase
  
   def test_octokit
 

@@ -2,7 +2,7 @@
 require_relative "../cam"
 require "test/unit"
 
-class TestBucket < Test::Unit::TestCase
+class TestCam < Test::Unit::TestCase
  
   def test_cam
 

@@ -19,11 +19,13 @@ set :port, 4567
 
 $nshport = ENV['NSHPORT']
 $ACCESS_TOKEN = ENV['GITTOKEN']
-$commandlog = '/home/drone/commandlog.txt';
-$consolelog = '/home/drone/consolelog.txt';
+$srcdir = '.'
+$commandlog = 'commandlog.txt'
+$consolelog = 'consolelog.txt'
 $bucket_name = 'results.dronetest.io'
 $host = 'zurich01'
 $results_url = ""
+$continuous_branch = nil
 
 $lf = '.lockfile'
 
@@ -56,7 +58,7 @@ def do_work (command, error_message)
 
   Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
 
-  logfile = File.open($commandlog, 'a')
+  logfile = File.open($srcdir + $commandlog, 'a')
 
     while line = stdout_err.gets
       puts "OUT> " + line
@@ -133,7 +135,7 @@ def openserialport (timeout)
 end
 
 
-def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, results_link, results_image_link)
+def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, results_link, results_image_link, timeout)
   # Execute hardware test
   sender = ENV['MAILSENDER']
   testcmd = "Tools/px_uploader.py --port \"/dev/serial/by-id/usb-3D_Robotics*,/dev/tty.usbmodem1\" Images/px4fmu-v2_test.px4"
@@ -161,7 +163,7 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
   end
 
   # Total test timeout in seconds
-  test_timeout_s = 30;
+  test_timeout_s = timeout;
 
   # Wait 0.5 s for new data
   read_timeout_ms = 500
@@ -204,10 +206,10 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
         end
 
       end  
-    elsif ((Time.now() - test_start_time) > test_timeout_s)
+    elsif ((test_timeout_s > 0) && ((Time.now() - test_start_time) > test_timeout_s))
       finished = true
-      File.open($consolelog, 'w') {|f| f.write("NO SERIAL DATA RECEIVED!\n") }
-      puts "No input from serial port"
+      File.open($consolelog, 'w') {|f| f.write(testResult + "\nSERIAL READ TIMEOUT!\n") }
+      puts "Serial port timeout"
     end  
   end until finished
   
@@ -244,7 +246,7 @@ def set_PR_Status (repo, sha, prstatus, description)
   puts res
 end    
 
-def fork_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha)
+def fork_hwtest (continuous_branch, pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha)
 #Starts the hardware test in a subshell
 
 pid = Process.fork
@@ -276,10 +278,19 @@ if pid.nil? then
   tbuild_start = Time.now
   do_build srcdir
   tbuild_duration = Time.now - tbuild_start
-  thw_start = Time.now
 
   # Run the hardware test
-  result = make_hwtest pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, $results_url, results_still
+  hw_timeout = 30;
+
+  # If the continuous integration branch name
+  # is set, indicate that the HW test should
+  # never actually time out
+  if (!continuous_branch.nil?)
+    hw_timeout = 0;
+  end
+
+  thw_start = Time.now
+  result = make_hwtest pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, $results_url, results_still, hw_timeout
   thw_duration = Time.now - thw_start
 
   # Take webcam image
@@ -298,9 +309,9 @@ if pid.nil? then
   end
 
   # Logfile
-  results_upload($bucket_name, $commandlog, '%s/%s' % [s3_dirname, 'commandlog.txt'])
+  results_upload($bucket_name, $srcdir + $commandlog, '%s/%s' % [s3_dirname, 'commandlog.txt'])
   FileUtils.rm_rf($commandlog)
-  results_upload($bucket_name, $consolelog, '%s/%s' % [s3_dirname, 'consolelog.txt'])
+  results_upload($bucket_name, $srcdir + $consolelog, '%s/%s' % [s3_dirname, 'consolelog.txt'])
   FileUtils.rm_rf($consolelog)
   # GIF
   results_upload($bucket_name, 'animated.gif', '%s/%s' % [s3_dirname, 'animated.gif'])
@@ -327,7 +338,7 @@ end
 
 # ---------- Routing ------------
 get '/' do
-  'Hello unknown'
+  "Hello unknown"
 end
 get '/payload' do
   "This URL is intended to be used with POST, not GET"
@@ -340,7 +351,7 @@ post '/payload' do
   when 'ping'
         "Hello"    
   when 'pull_request'
-begin
+  begin
     pr = body["pull_request"]
     number = body['number']
     puts pr['state']
@@ -348,6 +359,7 @@ begin
     if (['opened', 'reopened'].include?(action))
       sha = pr['head']['sha']
       srcdir = sha
+      $srcdir = srcdir
       full_name = pr['base']['repo']['full_name']
       #ENV['srcdir'] = srcdir
       puts "Source directory: #{srcdir}"
@@ -362,13 +374,13 @@ begin
       url = pr['head']['repo']['html_url']
       puts "Adding to queue: Pull request: #{number} " + branch + " from "+ url
       set_PR_Status full_name, sha, 'pending', 'Running test on Pixhawk hardware..'
-      fork_hwtest pushername, pusheremail, pr, srcdir, branch, url, full_name, sha
-      'Pull request event queued for testing.'
+      fork_hwtest nil, pushername, pusheremail, pr, srcdir, branch, url, full_name, sha
+      puts 'Pull request event queued for testing.'
     else
       puts 'Ignoring closing of pull request #' + String(number)
     end
-end
-puts "Pull Request"    
+  end
+   
   when 'push'
     branch = body['ref']
 
@@ -386,8 +398,8 @@ puts "Pull Request"
       full_name = body['repository']['full_name']
       puts "Full name: " + full_name
       set_PR_Status full_name, sha, 'pending', 'Running test on Pixhawk hardware..'
-      fork_hwtest pushername, pusheremail, nil, srcdir, branch, body['repository']['html_url'], full_name, sha
-      'Push event queued for testing.'
+      fork_hwtest $continuous_branch, pushername, pusheremail, nil, srcdir, branch, body['repository']['html_url'], full_name, sha
+      puts 'Push event queued for testing.'
     end
   when 'status'
     puts "Ignoring GH status event"
