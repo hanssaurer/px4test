@@ -135,7 +135,7 @@ def openserialport (timeout)
 end
 
 
-def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, results_link, results_image_link, timeout)
+def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, results_link, results_image_link, hw_timeout)
   # Execute hardware test
   sender = ENV['MAILSENDER']
   testcmd = "Tools/px_uploader.py --port \"/dev/serial/by-id/usb-3D_Robotics*,/dev/tty.usbmodem1\" Images/px4fmu-v2_test.px4"
@@ -163,7 +163,7 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
   end
 
   # Total test timeout in seconds
-  test_timeout_s = timeout;
+  test_timeout_s = hw_timeout;
 
   # Wait 0.5 s for new data
   read_timeout_ms = 500
@@ -195,7 +195,7 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
         #puts testResult
 
         # Write test results to console log file
-        File.open($consolelog, 'w') {|f| f.write(testResult) }
+        File.open($srcdir + $consolelog, 'w') {|f| f.write(testResult) }
 
         if testResult.include? "TEST FAILED"
           puts "TEST FAILED!"
@@ -208,7 +208,7 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
       end  
     elsif ((test_timeout_s > 0) && ((Time.now() - test_start_time) > test_timeout_s))
       finished = true
-      File.open($consolelog, 'w') {|f| f.write(testResult + "\nSERIAL READ TIMEOUT!\n") }
+      File.open($srcdir + $consolelog, 'w') {|f| f.write(testResult + "\nSERIAL READ TIMEOUT!\n") }
       puts "Serial port timeout"
     end  
   end until finished
@@ -256,7 +256,7 @@ if pid.nil? then
   do_lock($lf)
   # Clean up any mess left behind by a previous potential fail
   FileUtils.rm_rf(srcdir)
-  FileUtils.touch($consolelog)
+  FileUtils.touch($srcdir + $consolelog)
 
   # In child
 
@@ -312,7 +312,7 @@ if pid.nil? then
   results_upload($bucket_name, $srcdir + $commandlog, '%s/%s' % [s3_dirname, 'commandlog.txt'])
   FileUtils.rm_rf($commandlog)
   results_upload($bucket_name, $srcdir + $consolelog, '%s/%s' % [s3_dirname, 'consolelog.txt'])
-  FileUtils.rm_rf($consolelog)
+  FileUtils.rm_rf($srcdir + $consolelog)
   # GIF
   results_upload($bucket_name, 'animated.gif', '%s/%s' % [s3_dirname, 'animated.gif'])
   FileUtils.rm_rf('animated.gif')
