@@ -1,12 +1,17 @@
 #!/bin/bash
 
-#Make shure that mailserver is running
-if ps aux | grep "[_]postfix" > /dev/null
+uname_system=`uname`
+
+if [ uname_system == "Darwin" ]
 then
-    echo "Postfix Mailserver is running"
-else
-    echo "Postfix Mailserver must be started - Password required, if not yet superuser!"
-    sudo Postfix start
+	# Make shure that mailserver is running
+	if ps aux | grep "[_]postfix" > /dev/null
+	then
+    		echo "Postfix Mailserver is running"
+	else
+    		echo "Postfix Mailserver must be started - Password required, if not yet superuser!"
+    		sudo Postfix start
+	fi
 fi
 
 # Grab config from local file
