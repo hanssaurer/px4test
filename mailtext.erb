@@ -3,7 +3,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 </head>
 <body>
-  <div id="body" style="font-family:Helvetica Neue, Helvetica, Arial, sans-serif;font-size:16px;color:#808080;width:90%;margin: auto; align: left">
+  <div id="body" style="font-family:Helvetica Neue, Helvetica, Arial, sans-serif;font-size:16px;color:#808080;width:98%;margin: auto; align: left">
     <table background="" style="<%= styles['table'] %>">
       <tr style="<%= styles['tr'] %>">
         <td style="<%= styles['td'] %>text-align:left;">
@@ -59,7 +59,7 @@
       </tr>
       <tr style="<%= styles['tr'] %>">
         <td style="<%= styles['td'] %>">
-           <span style="<%= styles['spansmall'] %>"><a href="<%= results_link %>"><img src="<%= still_image_link %>" width="100%"></a></span>
+          <a href="<%= results_link %>"><img style="<%= styles['boardimage'] %>" src="<%= still_image_link %>" width="99%"></a>
         </td>
       </tr>
     </table>
@@ -77,6 +77,12 @@
              <pre style="<%= styles['shell'] %>"><%= detailed_results %></pre>
            </span>
         </td>
+      </tr>
+    </table>
+    <table background="" style="<%= styles['table'] %> width:100%;">
+      <tr style="<%= styles['tr'] %>">
+        <td style="<%= styles['td'] %>"><span style="<%= styles['spansmall'] %>"><a href="http://dronetest.io">Dronetest.io</a> powered by <a href="http://dronetest.io">Hans-CI</a> with teutonic thoroughness.
+        </span></td>
       </tr>
     </table>
   </div>  
