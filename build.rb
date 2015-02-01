@@ -160,16 +160,20 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
     puts "---------- end of command output------------"
   end
 
-  # Wait 20 s for new data
-  read_timeout_ms = 20 * 1000
+  # Total test timeout in seconds
+  test_timeout_s = 30;
+
+  # Wait 0.5 s for new data
+  read_timeout_ms = 500
 
   sp = openserialport read_timeout_ms
-  sleep(5)
 
   test_passed = false
 
   # XXX prepend each line with a time marker
   # so we know if output comes in with huge delays
+
+  test_start_time = Time.now
 
   begin
     begin
@@ -177,7 +181,7 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
     rescue Errno::ENXIO  
       puts "Serial port not available! Please connect"
       sleep(1)
-      sp = openserialport 5000
+      sp = openserialport read_timeout_ms
       retry
     end
     if !input.nil?
@@ -200,7 +204,7 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
         end
 
       end  
-    else
+    elsif ((Time.now() - test_start_time) > test_timeout_s)
       finished = true
       File.open($consolelog, 'w') {|f| f.write("NO SERIAL DATA RECEIVED!\n") }
       puts "No input from serial port"
