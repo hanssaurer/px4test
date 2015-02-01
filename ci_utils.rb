@@ -73,7 +73,7 @@ def make_mmail (contributor, email, sender, detailed_results, success, srcdir, b
   # debug output puts "Encoded: #{s}"
 
   mail = Mail.new do
-    from     "PX4 Hardware Test  <#{sender}>"
+    from     "Dronetest.io  <#{sender}>"
     to       "#{contributor} <#{email}>"
     cc       cc1 + "," + cc2
     subject  "#{emailprefix}: On-hardware test for #{branch} on #{full_repo_name} (#{sha})"
