@@ -361,7 +361,6 @@ post '/payload' do
       srcdir = sha
       $srcdir = srcdir
       full_name = pr['base']['repo']['full_name']
-      #ENV['srcdir'] = srcdir
       puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
 
@@ -387,7 +386,7 @@ post '/payload' do
     if !(body['head_commit'].nil?) && body['head_commit'] != 'null'
       sha = body['head_commit']['id']
       srcdir = sha
-      #ENV['srcdir'] = srcdir
+      $srcdir = srcdir;
       puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
       pushername = body ['pusher']['name']
