@@ -19,7 +19,7 @@ set :port, 4567
 
 $nshport = ENV['NSHPORT']
 $ACCESS_TOKEN = ENV['GITTOKEN']
-$srcdir = '.'
+$logdir = './'
 $commandlog = 'commandlog.txt'
 $consolelog = 'consolelog.txt'
 $bucket_name = 'results.dronetest.io'
@@ -58,7 +58,7 @@ def do_work (command, error_message)
 
   Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
 
-  logfile = File.open($srcdir + $commandlog, 'a')
+  logfile = File.open($logdir + $commandlog, 'a')
 
     while line = stdout_err.gets
       puts "OUT> " + line
@@ -195,7 +195,7 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
         #puts testResult
 
         # Write test results to console log file
-        File.open($srcdir + $consolelog, 'w') {|f| f.write(testResult) }
+        File.open($logdir + $consolelog, 'w') {|f| f.write(testResult) }
 
         if testResult.include? "TEST FAILED"
           puts "TEST FAILED!"
@@ -208,7 +208,7 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
       end  
     elsif ((test_timeout_s > 0) && ((Time.now() - test_start_time) > test_timeout_s))
       finished = true
-      File.open($srcdir + $consolelog, 'w') {|f| f.write(testResult + "\nSERIAL READ TIMEOUT!\n") }
+      File.open($logdir + $consolelog, 'w') {|f| f.write(testResult + "\nSERIAL READ TIMEOUT!\n") }
       puts "Serial port timeout"
     end  
   end until finished
@@ -256,7 +256,7 @@ if pid.nil? then
   do_lock($lf)
   # Clean up any mess left behind by a previous potential fail
   FileUtils.rm_rf(srcdir)
-  FileUtils.touch($srcdir + $consolelog)
+  FileUtils.touch($logdir + $consolelog)
 
   # In child
 
@@ -309,10 +309,10 @@ if pid.nil? then
   end
 
   # Logfile
-  results_upload($bucket_name, $srcdir + $commandlog, '%s/%s' % [s3_dirname, 'commandlog.txt'])
+  results_upload($bucket_name, $logdir + $commandlog, '%s/%s' % [s3_dirname, 'commandlog.txt'])
   FileUtils.rm_rf($commandlog)
-  results_upload($bucket_name, $srcdir + $consolelog, '%s/%s' % [s3_dirname, 'consolelog.txt'])
-  FileUtils.rm_rf($srcdir + $consolelog)
+  results_upload($bucket_name, $logdir + $consolelog, '%s/%s' % [s3_dirname, 'consolelog.txt'])
+  FileUtils.rm_rf($logdir + $consolelog)
   # GIF
   results_upload($bucket_name, 'animated.gif', '%s/%s' % [s3_dirname, 'animated.gif'])
   FileUtils.rm_rf('animated.gif')
@@ -359,7 +359,7 @@ post '/payload' do
     if (['opened', 'reopened'].include?(action))
       sha = pr['head']['sha']
       srcdir = sha
-      $srcdir = srcdir
+      $logdir = Dir.pwd + "/" + srcdir + "/"
       full_name = pr['base']['repo']['full_name']
       puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
@@ -386,7 +386,7 @@ post '/payload' do
     if !(body['head_commit'].nil?) && body['head_commit'] != 'null'
       sha = body['head_commit']['id']
       srcdir = sha
-      $srcdir = srcdir;
+      $logdir = Dir.pwd + "/" + srcdir + "/";
       puts "Source directory: #{srcdir}"
       #Set environment vars for sub processes
       pushername = body ['pusher']['name']
