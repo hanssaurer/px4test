@@ -256,6 +256,7 @@ if pid.nil? then
   do_lock($lf)
   # Clean up any mess left behind by a previous potential fail
   FileUtils.rm_rf(srcdir)
+  FileUtils.mkdir(srcdir);
   FileUtils.touch($logdir + $consolelog)
 
   # In child
