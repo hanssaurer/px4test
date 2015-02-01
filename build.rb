@@ -160,10 +160,16 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
     puts "---------- end of command output------------"
   end
 
-  sp = openserialport 5000
+  # Wait 20 s for new data
+  read_timeout_ms = 20 * 1000
+
+  sp = openserialport read_timeout_ms
   sleep(5)
 
   test_passed = false
+
+  # XXX prepend each line with a time marker
+  # so we know if output comes in with huge delays
 
   begin
     begin
