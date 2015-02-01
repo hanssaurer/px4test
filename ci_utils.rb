@@ -57,8 +57,10 @@ def make_mmail (contributor, email, sender, detailed_results, success, srcdir, b
   puts detailed_results
   if success
     one_line_feedback = 'The test succeeded'
+    emailprefix = "SUCCESS"
   else
     one_line_feedback = 'The test failed'
+    emailprefix = "FAIL"
   end
 
   s = File.read('mailtext.erb')
@@ -74,7 +76,7 @@ def make_mmail (contributor, email, sender, detailed_results, success, srcdir, b
     from     "PX4 Hardware Test  <#{sender}>"
     to       "#{contributor} <#{email}>"
     cc       cc1 + "," + cc2
-    subject  "On-hardware test for #{branch} on #{full_repo_name} (#{sha})"
+    subject  "#{emailprefix}: On-hardware test for #{branch} on #{full_repo_name} (#{sha})"
 
     puts "Sender: " + from.to_s
     
@@ -83,7 +85,6 @@ def make_mmail (contributor, email, sender, detailed_results, success, srcdir, b
       content_transfer_encoding 'quoted-printable'
       body  s
     end
-    #add_file :filename => 'TestResult.txt', :content => attachment
   end
 
   # Deliver email via sendmail, as default (SMTP)
