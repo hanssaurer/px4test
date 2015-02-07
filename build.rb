@@ -197,7 +197,7 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
         # Write test results to console log file
         File.open($logdir + $consolelog, 'w') {|f| f.write(testResult) }
 
-        if testResult.include? "TEST FAILED"
+        if (testResult.include? "TEST FAILED") || (testResult.include? "Tests FAILED")
           puts "TEST FAILED!"
           test_passed = false
         else
@@ -413,6 +413,8 @@ post '/payload' do
     puts 'Ignoring issues'
   when 'pull_request_review_comment'
     puts 'Ignoring review comment'
+  when 'started'
+    puts 'Ignoring started request'
 
   else
     puts "Unhandled request:"
