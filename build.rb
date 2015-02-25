@@ -107,7 +107,7 @@ end
 def do_build (srcdir)
     puts "Starting build"
     Dir.chdir(srcdir+"/Firmware") do    
-        do_work  'BOARDS="px4fmu-v2 px4io-v2" make archives', "make archives failed"
+        do_work  'J=8 BOARDS="px4fmu-v2 px4io-v2" make archives', "make archives failed"
         do_work  "make -j8 px4fmu-v2_test", "make px4fmu-v2_test failed"
     end
 end    
