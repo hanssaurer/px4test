@@ -26,6 +26,7 @@ $bucket_name = 'results.dronetest.io'
 $host = 'zurich01'
 $results_url = ""
 $continuous_branch = nil
+$clonedir = "Firmware"
 
 $lf = '.lockfile'
 
@@ -85,8 +86,8 @@ def do_clone (srcdir, branch, html_url)
         #git clone <url> --branch <branch> --single-branch [<folder>]
         #result = `git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch `
         #puts result
-        do_work "git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch", "Cloning repo failed."
-        Dir.chdir("Firmware") do
+        do_work "git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch #{$clonedir}", "Cloning repo failed."
+        Dir.chdir("#{$clonedir}") do
             #result = `git submodule init && git submodule update`
             #puts result
             do_work "git submodule init", "GIT submodule init failed"
@@ -97,7 +98,7 @@ end
 
 def do_master_merge (srcdir, base_repo, base_branch)
     puts "do_merge of #{base_repo}/#{base_branch}"
-    Dir.chdir(srcdir + "/Firmware") do
+    Dir.chdir(srcdir + "/#{$clonedir}") do
         do_work "git remote add base_repo #{base_repo}.git", "GIT adding upstream failed"
         do_work "git fetch base_repo", "GIT fetching upstream failed"
         do_work "git merge base_repo/#{base_branch} -m 'Merged #{base_repo}/#{base_branch} into test branch'", "Failed merging #{base_repo}/#{base_branch}"
@@ -106,7 +107,7 @@ end
     
 def do_build (srcdir)
     puts "Starting build"
-    Dir.chdir(srcdir+"/Firmware") do    
+    Dir.chdir(srcdir+"/#{$clonedir}") do    
         do_work  'J=8 BOARDS="px4fmu-v2 px4io-v2" make archives', "make archives failed"
         do_work  "make -j8 px4fmu-v2_test", "make px4fmu-v2_test failed"
     end
