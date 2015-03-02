@@ -27,6 +27,7 @@ $host = 'zurich01'
 $results_url = ""
 $continuous_branch = nil
 $clonedir = "Firmware"
+$hardware_test_timeout = 60
 
 $lf = '.lockfile'
 
@@ -282,7 +283,7 @@ if pid.nil? then
   tbuild_duration = Time.now - tbuild_start
 
   # Run the hardware test
-  hw_timeout = 30;
+  hw_timeout = $hardware_test_timeout;
 
   # If the continuous integration branch name
   # is set, indicate that the HW test should
