@@ -108,9 +108,9 @@ end
     
 def do_build (srcdir)
     puts "Starting build"
-    Dir.chdir(srcdir+"/#{$clonedir}") do    
-        do_work  'J=8 BOARDS="px4fmu-v2 px4io-v2" make archives', "make archives failed"
-        do_work  "make -j8 px4fmu-v2_test", "make px4fmu-v2_test failed"
+    Dir.chdir(srcdir+"/#{$clonedir}") do
+        do_work  "make px4fmu-v2_default", "make px4fmu-v2_default failed"
+        # do_work  "make px4fmu-v2_test", "make px4fmu-v2_test failed"
     end
 end    
 
@@ -140,7 +140,7 @@ end
 def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_name, sha, results_link, results_image_link, hw_timeout)
   # Execute hardware test
   sender = ENV['MAILSENDER']
-  testcmd = "Tools/px_uploader.py --port \"/dev/serial/by-id/usb-3D_Robotics*,/dev/tty.usbmodem1\" Images/px4fmu-v2_test.px4"
+  testcmd = "Tools/px_uploader.py --port \"/dev/serial/by-id/usb-3D_Robotics*,/dev/tty.usbmodem1\" build_px4fmu-v2_default/src/firmware/nuttx/nuttx-px4fmu-v2-default.px4"
 
   #some variables need to be initialized
   testResult = ""
