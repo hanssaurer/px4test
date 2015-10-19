@@ -92,7 +92,7 @@ def do_clone (srcdir, branch, html_url)
             #result = `git submodule init && git submodule update`
             #puts result
             do_work "git submodule init", "GIT submodule init failed", "."
-            do_work "git submodule update", "GIT submodule update failed", "."
+            do_work "git submodule update --recursive", "GIT submodule update failed", "."
         end
     end
 end
