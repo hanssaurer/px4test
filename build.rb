@@ -109,7 +109,9 @@ end
 def do_build (srcdir)
     puts "Starting build"
     Dir.chdir(File.join(srcdir, "#{$clonedir}")) {
-        do_work  "make px4fmu-v2_default", "make px4fmu-v2_default failed", "."
+        system 'mkdir', '-p', 'build_px4fmu-v2_default'
+        do_work "cmake ..", "cmake run", "build_px4fmu-v2_default"
+        do_work "make", "make px4fmu-v2_default failed", "build_px4fmu-v2_default"
         # do_work  "make px4fmu-v2_test", "make px4fmu-v2_test failed", File.join(srcdir, "#{$clonedir}")
     }
 end    
