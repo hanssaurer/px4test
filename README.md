@@ -14,6 +14,7 @@ Install OS dependencies via the package manager:
 
 ```
 brew install opencv imagemagick
+sudo gem install specific_install
 ```
 and RMagick:
 ```
@@ -31,7 +32,7 @@ sudo apt-get install libopencv-highgui-dev ruby-rmagick
 Install the Ruby dependencies using gem:
 
 ```
-sudo gem install mail serialport sinatra json octokit thin specific_install aws-sdk
+sudo gem install mail serialport sinatra json octokit thin aws-sdk
 ```
 
 Install our custom rb_webcam gem and rmagick
