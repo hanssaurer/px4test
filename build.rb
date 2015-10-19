@@ -108,10 +108,10 @@ end
     
 def do_build (srcdir)
     puts "Starting build"
-    Dir.chdir(srcdir+"/#{$clonedir}") do
+    Dir.chdir(srcdir + "/#{$clonedir}") {
         do_work  "make px4fmu-v2_default", "make px4fmu-v2_default failed"
         # do_work  "make px4fmu-v2_test", "make px4fmu-v2_test failed"
-    end
+    }
 end    
 
 def openserialport (timeout)
