@@ -56,9 +56,9 @@ def do_unlock(board)
   FileUtils.rm_rf(board)
 end
 
-def do_work (command, error_message, dir)
+def do_work (command, error_message, work_dir)
 
-  Open3.popen2e(command, :chdir=>"#{dir}") do |stdin, stdout_err, wait_thr|
+  Open3.popen2e(command, :chdir=>"#{work_dir}") do |stdin, stdout_err, wait_thr|
 
   logfile = File.open($logdir + $commandlog, 'a')
 
@@ -87,12 +87,12 @@ def do_clone (srcdir, branch, html_url)
         #git clone <url> --branch <branch> --single-branch [<folder>]
         #result = `git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch `
         #puts result
-        do_work "git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch #{$clonedir}", "Cloning repo failed.", srcdir
+        do_work "git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch #{$clonedir}", "Cloning repo failed.", "."
         Dir.chdir("#{$clonedir}") do
             #result = `git submodule init && git submodule update`
             #puts result
-            do_work "git submodule init", "GIT submodule init failed", File.join(srcdir, "#{$clonedir}")
-            do_work "git submodule update", "GIT submodule update failed", File.join(srcdir, "#{$clonedir}")
+            do_work "git submodule init", "GIT submodule init failed", "."
+            do_work "git submodule update", "GIT submodule update failed", "."
         end
     end
 end
@@ -100,16 +100,16 @@ end
 def do_master_merge (srcdir, base_repo, base_branch)
     puts "do_merge of #{base_repo}/#{base_branch}"
     Dir.chdir(File.join(srcdir, "#{$clonedir}")) do
-        do_work "git remote add base_repo #{base_repo}.git", "GIT adding upstream failed", File.join(srcdir, "#{$clonedir}")
-        do_work "git fetch base_repo", "GIT fetching upstream failed", File.join(srcdir, "#{$clonedir}")
-        do_work "git merge base_repo/#{base_branch} -m 'Merged #{base_repo}/#{base_branch} into test branch'", "Failed merging #{base_repo}/#{base_branch}", File.join(srcdir, "#{$clonedir}")
+        do_work "git remote add base_repo #{base_repo}.git", "GIT adding upstream failed", "."
+        do_work "git fetch base_repo", "GIT fetching upstream failed", "."
+        do_work "git merge base_repo/#{base_branch} -m 'Merged #{base_repo}/#{base_branch} into test branch'", "Failed merging #{base_repo}/#{base_branch}", "."
     end
 end
     
 def do_build (srcdir)
     puts "Starting build"
     Dir.chdir(File.join(srcdir, "#{$clonedir}")) {
-        do_work  "make px4fmu-v2_default", "make px4fmu-v2_default failed", File.join(srcdir, "#{$clonedir}")
+        do_work  "make px4fmu-v2_default", "make px4fmu-v2_default failed", "."
         # do_work  "make px4fmu-v2_test", "make px4fmu-v2_test failed", File.join(srcdir, "#{$clonedir}")
     }
 end    
