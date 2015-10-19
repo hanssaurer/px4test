@@ -58,7 +58,7 @@ end
 
 def do_work (command, error_message, dir)
 
-  Open3.popen2e(command, :chdir=>dir) do |stdin, stdout_err, wait_thr|
+  Open3.popen2e(command, Hash[":chdir" => dir]) do |stdin, stdout_err, wait_thr|
 
   logfile = File.open($logdir + $commandlog, 'a')
 
