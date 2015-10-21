@@ -17,6 +17,9 @@ def results_claim_directory(bucket_name, host, aws_key, aws_secret)
 
   largest = 0
 
+  # This is terribly inefficient with the new AWS SDK
+  # this needs to be done so it scales with a couple of
+  # thousand runs.
   s3_objects.each do |obj|
     obj.key.slice! host + "/"
     s3_number = obj.key.split("/")[0].to_i
