@@ -45,7 +45,8 @@ def do_lock(board)
     end
 
     # Keep waiting as long as the lock file exists
-    sleep(1)
+    sleep(5)
+    puts 'waiting for lock to be released..'
   end
 
   # This is the critical section - we might want to lock it
@@ -259,15 +260,18 @@ def fork_hwtest (continuous_branch, pushername, pusheremail, pr, srcdir, branch,
 pid = Process.fork
 if pid.nil? then
 
+  puts "WORKER ACTIVE!"
+
   # Lock this board for operations
   do_lock($lf)
   # Clean up any mess left behind by a previous potential fail
+  puts "Cleaning up old files.."
   FileUtils.rm_rf(srcdir)
   FileUtils.mkdir(srcdir);
   FileUtils.touch($logdir + $consolelog)
 
   # In child
-
+  puts "Claiming results.."
   s3_dirname = results_claim_directory($bucket_name, $host, $aws_key, $aws_secret)
 
   $results_url = sprintf("http://%s/%s/index.html", $bucket_name, s3_dirname);
@@ -278,6 +282,7 @@ if pid.nil? then
   $sha = sha
 
   tgit_start = Time.now
+  puts "Cloning repository from:" + url
   do_clone srcdir, branch, url
   if !pr.nil?
     do_master_merge srcdir, pr['base']['repo']['html_url'], pr['base']['ref']
