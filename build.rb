@@ -17,8 +17,8 @@ set :environment, :production
 set :server, :thin
 set :port, 4567
 
-$aws_key = ENV['NSHPORT']
-$aws_secret = ENV['GITTOKEN']
+$aws_key = ENV['AWS_ACCESS_KEY_ID']
+$aws_secret = ENV['AWS_SECRET_ACCESS_KEY']
 
 $nshport = ENV['NSHPORT']
 $ACCESS_TOKEN = ENV['GITTOKEN']

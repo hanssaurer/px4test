@@ -13,13 +13,13 @@ def results_claim_directory(bucket_name, host, aws_key, aws_secret)
     return nil
   end
 
-  s3_objects = bucket.objects.with_prefix(host).collect(&:key)
+  s3_objects = bucket.objects(prefix: host) #.collect(&:key)
 
   largest = 0
 
-  s3_objects.each do |s3_path|
-    s3_path.slice! host + "/"
-    s3_number = s3_path.split("/")[0].to_i
+  s3_objects.each do |obj|
+    obj.key.slice! host + "/"
+    s3_number = obj.key.split("/")[0].to_i
 
     if (s3_number > largest)
       largest = s3_number
@@ -32,7 +32,9 @@ def results_claim_directory(bucket_name, host, aws_key, aws_secret)
 
   claimed_file = '.claimed'
   FileUtils.touch(claimed_file)
-  bucket.objects["%s/%s" % [s3_new_key, claimed_file]].write(:file => claimed_file)
+  obj = bucket.object("%s/%s" % [s3_new_key, claimed_file])
+  obj.put(:body => claimed_file)
+  obj.etag
   FileUtils.rm_rf(claimed_file);
 
   return s3_new_key
@@ -51,7 +53,8 @@ def results_upload(bucket_name, local_file, results_file, aws_key, aws_secret)
 
   # Upload a file.
   #key = File.basename(results_file)
-  bucket.objects[results_file].write(:file => local_file)
+  obj = bucket.object(results_file)
+  obj.put(:body => local_file)
   puts "Uploading file #{local_file} to #{results_file} in bucket #{bucket_name}."
   puts "Link: http://#{bucket_name}/#{results_file}"
   return true
