@@ -17,6 +17,9 @@ set :environment, :production
 set :server, :thin
 set :port, 4567
 
+$aws_key = ENV['NSHPORT']
+$aws_secret = ENV['GITTOKEN']
+
 $nshport = ENV['NSHPORT']
 $ACCESS_TOKEN = ENV['GITTOKEN']
 $logdir = './'
@@ -265,7 +268,7 @@ if pid.nil? then
 
   # In child
 
-  s3_dirname = results_claim_directory($bucket_name, $host)
+  s3_dirname = results_claim_directory($bucket_name, $host, $aws_key, $aws_secret)
 
   $results_url = sprintf("http://%s/%s/index.html", $bucket_name, s3_dirname);
   results_still = sprintf("http://%s/%s/still.jpg", $bucket_name, s3_dirname);
@@ -302,7 +305,7 @@ if pid.nil? then
   take_picture(".")
 
   # Upload still JPEG
-  results_upload($bucket_name, 'still.jpg', '%s/%s' % [s3_dirname, 'still.jpg'])
+  results_upload($bucket_name, 'still.jpg', '%s/%s' % [s3_dirname, 'still.jpg'], $aws_key, $aws_secret)
   FileUtils.rm_rf('still.jpg')
 
   timingstr = sprintf("%4.2fs", tgit_duration + tbuild_duration + thw_duration)
@@ -314,16 +317,16 @@ if pid.nil? then
   end
 
   # Logfile
-  results_upload($bucket_name, $logdir + $commandlog, '%s/%s' % [s3_dirname, 'commandlog.txt'])
+  results_upload($bucket_name, $logdir + $commandlog, '%s/%s' % [s3_dirname, 'commandlog.txt'], $aws_key, $aws_secret)
   FileUtils.rm_rf($commandlog)
-  results_upload($bucket_name, $logdir + $consolelog, '%s/%s' % [s3_dirname, 'consolelog.txt'])
+  results_upload($bucket_name, $logdir + $consolelog, '%s/%s' % [s3_dirname, 'consolelog.txt'], $aws_key, $aws_secret)
   FileUtils.rm_rf($logdir + $consolelog)
   # GIF
-  results_upload($bucket_name, 'animated.gif', '%s/%s' % [s3_dirname, 'animated.gif'])
+  results_upload($bucket_name, 'animated.gif', '%s/%s' % [s3_dirname, 'animated.gif'], $aws_key, $aws_secret)
   FileUtils.rm_rf('animated.gif')
 
   # Index page
-  results_upload($bucket_name, 'index.html', '%s/%s' % [s3_dirname, 'index.html'])
+  results_upload($bucket_name, 'index.html', '%s/%s' % [s3_dirname, 'index.html'], $aws_key, $aws_secret)
   FileUtils.rm_rf('index.html')
 
   # Clean up by deleting the work directory
