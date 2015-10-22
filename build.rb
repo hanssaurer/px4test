@@ -110,7 +110,7 @@ def do_build (srcdir)
         system 'rm', '-rf', 'build_px4fmu-v2_default'
         system 'mkdir', '-p', 'build_px4fmu-v2_default'
         do_work "git submodule update --init --recursive --force", "GIT submodule update failed", "."
-        Dir.chdir(File.join(srcdir, "#{$clonedir}", "build_px4fmu-v2_default")) {
+        Dir.chdir("build_px4fmu-v2_default") {
           do_work "cmake .. -GNinja -DCONFIG=nuttx_px4fmu-v2_default", "cmake run failed", "."
           do_work "/usr/bin/ninja", "ninja failed", "."
         }
