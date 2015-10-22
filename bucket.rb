@@ -36,8 +36,9 @@ def results_claim_directory(bucket_name, host, aws_key, aws_secret)
   claimed_file = '.claimed'
   FileUtils.touch(claimed_file)
   obj = bucket.object("%s/%s" % [s3_new_key, claimed_file])
-  obj.put(:body => claimed_file, :acl => "public-read")
-  obj.etag
+  #obj.put(:body => claimed_file, :acl => "public-read")
+  data = File.open claimed_file
+  obj.upload_file(data, :acl => "public-read")
   FileUtils.rm_rf(claimed_file);
 
   return s3_new_key
@@ -57,7 +58,9 @@ def results_upload(bucket_name, local_file, results_file, aws_key, aws_secret)
   # Upload a file.
   #key = File.basename(results_file)
   obj = bucket.object(results_file)
-  obj.put(:body => local_file)
+  #obj.put(:body => local_file)
+  data = File.open local_file
+  obj.upload_file(data, :acl => "public-read")
   puts "Uploading file #{local_file} to #{results_file} in bucket #{bucket_name}."
   puts "Link: http://#{bucket_name}/#{results_file}"
   return true
