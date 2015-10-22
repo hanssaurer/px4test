@@ -13,7 +13,7 @@ Install OS dependencies via the package manager:
 ## Mac OS
 
 ```
-brew install opencv imagemagick
+brew install opencv imagemagick ninja
 sudo gem install specific_install
 ```
 and RMagick:
@@ -24,7 +24,7 @@ sudo gem specific_install https://github.com/rmagick/rmagick.git
 ## Debian / Ubuntu
 
 ```
-sudo apt-get install git-core mailutils libopencv-highgui-dev ruby-rmagick ruby-dev
+sudo apt-get install git-core mailutils libopencv-highgui-dev ruby-rmagick ruby-dev ninja-build
 ```
 
 ### Installation
