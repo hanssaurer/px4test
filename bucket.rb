@@ -36,7 +36,7 @@ def results_claim_directory(bucket_name, host, aws_key, aws_secret)
   claimed_file = '.claimed'
   FileUtils.touch(claimed_file)
   obj = bucket.object("%s/%s" % [s3_new_key, claimed_file])
-  obj.put(:body => claimed_file)
+  obj.put(:body => claimed_file, :acl => "public-read")
   obj.etag
   FileUtils.rm_rf(claimed_file);
 

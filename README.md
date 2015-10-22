@@ -51,6 +51,14 @@ git clone https://github.com/hanssaurer/px4test.git
 
 The configuration involves the local configuration and setting up a webhook in the repository.
 
+#### Permissions
+
+Add user to group and LOGOUT / reboot after.
+
+```sh
+sudo usermod -a -G video $USER
+```
+
 #### Repository
 
 Create a new webhook with a URL looking like the one below and replace [ip or host] with the appropriate hostname.
