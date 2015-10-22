@@ -61,8 +61,8 @@ def do_unlock(board)
 end
 
 def do_work (command, error_message, work_dir)
-
-  Open3.popen2e(command, :chdir=>"#{work_dir}") do |stdin, stdout_err, wait_thr|
+  # :chdir=>"#{work_dir}"
+  Open3.popen2e(command) do |stdin, stdout_err, wait_thr|
 
   logfile = File.open($logdir + $commandlog, 'a')
 
@@ -92,12 +92,6 @@ def do_clone (srcdir, branch, html_url)
         #result = `git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch `
         #puts result
         do_work "git clone --depth 500 #{html_url}.git --branch #{branch} --single-branch #{$clonedir}", "Cloning repo failed.", "."
-        Dir.chdir("#{$clonedir}") do
-            #result = `git submodule init && git submodule update`
-            #puts result
-            do_work "git submodule init", "GIT submodule init failed", "."
-            do_work "git submodule update --recursive", "GIT submodule update failed", "."
-        end
     end
 end
 
@@ -113,12 +107,13 @@ end
 def do_build (srcdir)
     puts "Starting build"
     Dir.chdir(File.join(srcdir, "#{$clonedir}")) {
-        system 'git', 'submodule', 'update', '--init', '--recursive', '--force'
         system 'rm', '-rf', 'build_px4fmu-v2_default'
         system 'mkdir', '-p', 'build_px4fmu-v2_default'
-        do_work "cmake .. -GNinja -DCONFIG=nuttx_px4fmu-v2_default", "cmake run failed", "build_px4fmu-v2_default"
-        do_work "/usr/bin/ninja", "ninja failed", "build_px4fmu-v2_default"
-        # do_work  "make px4fmu-v2_test", "make px4fmu-v2_test failed", File.join(srcdir, "#{$clonedir}")
+        do_work "git submodule update --init --recursive --force", "GIT submodule update failed", "."
+        Dir.chdir(File.join(srcdir, "#{$clonedir}", "build_px4fmu-v2_default")) {
+          do_work "cmake .. -GNinja -DCONFIG=nuttx_px4fmu-v2_default", "cmake run failed", "."
+          do_work "/usr/bin/ninja", "ninja failed", "."
+        }
     }
 end    
 
@@ -164,11 +159,11 @@ def make_hwtest (pushername, pusheremail, pr, srcdir, branch, url, full_repo_nam
   puts input
   sp.close
 
-  Dir.chdir(srcdir+"/Firmware") do
+  Dir.chdir(File.join(srcdir, "Firmware")) do
     #puts "Call: " + testcmd
     #result = `#{testcmd}`
     puts "---------------command output---------------"
-    do_work testcmd, "Firmware upload failed", File.join(srcdir, "#{$clonedir}")
+    do_work testcmd, "Firmware upload failed", "."
     puts "---------- end of command output------------"
   end
 
