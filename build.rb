@@ -114,11 +114,11 @@ def do_build (srcdir)
         do_work "git submodule update --init --recursive --force", "GIT submodule update failed", "."
         Dir.chdir("build_px4fmu-v2_default") {
           do_work "cmake .. -GNinja -DCONFIG=nuttx_px4fmu-v2_default", "FMUv2 cmake run failed", "."
-          do_work "/usr/bin/ninja", "FMUv2 ninja failed", "."
+          do_work "ninja", "FMUv2 ninja failed", "."
         }
         Dir.chdir("build_qurt_eagle_travis") {
           do_work "cmake .. -GNinja -DCONFIG=qurt_eagle_travis", "Eagle cmake run failed", "."
-          do_work "/usr/bin/ninja", "Eagle ninja failed", "."
+          do_work "ninja", "Eagle ninja failed", "."
         }
     }
 end    
